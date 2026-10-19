@@ -753,19 +753,30 @@
         <input type="file" id="file-shot" accept="image/*" hidden />
 
         <section id="startup-error" hidden role="alert" style="position:fixed;inset:15% 8% auto;z-index:99999;padding:24px;background:#20212a;color:white;border:1px solid #b98458;border-radius:12px;font:16px/1.6 system-ui">
+            <button type="button" id="startup-error-close" aria-label="Zatvori obaveštenje" style="float:right;background:transparent;border:0;color:white;font-size:24px;cursor:pointer">×</button>
             <strong>Aplikacija nije uspela da se pokrene</strong>
             <p id="startup-error-message"></p>
             <p>Raspakuj ceo ZIP u novi folder i pokreni <b>START-STUDIO.bat</b> (Windows), ili <b>python3 serve.py --open</b>. Nemoj otvarati index.html dvoklikom.</p>
             <p>Otvori adresu koju ispiše server, pa pritisni Ctrl+Shift+R. Zaustavi stari server sa Ctrl+C.</p>
         </section>
         <script>
+            let studioStarted = false;
+            window.markStudioStarted = function () {
+                studioStarted = true;
+                document.getElementById('startup-error').hidden = true;
+            };
+            document.getElementById('startup-error-close').onclick = function () {
+                document.getElementById('startup-error').hidden = true;
+            };
             function showStartupError(message) {
+                if (studioStarted) return;
                 document.getElementById('startup-error-message').textContent = message;
                 document.getElementById('startup-error').hidden = false;
             }
             if (location.protocol === 'file:') showStartupError('Stranica je otvorena kao fajl. JavaScript moduli zahtevaju lokalni HTTP server.');
             window.addEventListener('error', function (event) {
-                if (event.target && event.target.tagName === 'SCRIPT') {
+                if (studioStarted) return;
+                if (event.target === document.getElementById('studio-entry')) {
                     showStartupError('JavaScript modul nije učitan. Proveri da li su svi fajlovi raspakovani i da li server šalje .js kao JavaScript, ne text/plain.');
                 } else if (event.error) {
                     showStartupError(event.message || 'Greška pri pokretanju JavaScript aplikacije.');
@@ -781,7 +792,7 @@
             }
         </script>
 
-        <script type="module">
+        <script type="module" id="studio-entry">
             import * as THREE from "three";
             import { initPromoStudio } from "./promo.js";
             import { normalizeScreenSettings, scrollPlacement, caseMaterial } from "./promo-core.js";
@@ -3596,6 +3607,10 @@
                     });
                 },
             });
+
+            // Successful initialization makes unrelated/injected script errors
+            // ineligible for the fatal startup overlay.
+            window.markStudioStarted();
 
             // Boot: preload the default screenshot into lastShotImg so the first model (and every switch)
             // composites it automatically via the existing recompose path.

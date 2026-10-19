@@ -22,9 +22,18 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
   assert.deepEqual(external,[]);assert.deepEqual(errors,[]);
   assert.ok(loaded.length>=6);for(const [url,status,type]of loaded){assert.equal(status,200,url);assert.match(type,/javascript/,url);}
   console.log('PASS fresh startup: complete 3D model, all local JavaScript modules and no external/CDN requests');
+  await page.evaluate(()=>{
+   const unrelated=document.createElement('script');unrelated.id='browser-extension-script';document.body.append(unrelated);
+   unrelated.dispatchEvent(new Event('error'));
+   window.dispatchEvent(new ErrorEvent('error',{message:'Unrelated runtime error',error:new Error('Unrelated runtime error')}));
+  });
+  assert.equal(await page.locator('#startup-error').isVisible(),false,'unrelated errors must not cover the working editor');
+  console.log('PASS unrelated script/runtime errors cannot show a fatal startup overlay after successful initialization');
   await page.route('**/promo-core.js',route=>route.fulfill({body:'export const broken = true;',contentType:'text/plain'}));
   await page.reload();await page.locator('#startup-error').waitFor({state:'visible'});
   assert.match(await page.locator('#startup-error').textContent(),/START-STUDIO.bat/);
+  await page.getByRole('button',{name:'Zatvori obaveštenje'}).click();
+  assert.equal(await page.locator('#startup-error').isVisible(),false);
   console.log('PASS a deliberately wrong JavaScript MIME type shows actionable startup instructions instead of an endless loader');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
