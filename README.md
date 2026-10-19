@@ -1,158 +1,208 @@
-<p align="center">
-  <a href="https://quentin-pla.github.io/phone-mockup-studio/"><img src="screenshots/app-desktop.png" width="100%" alt="Phone Mockup Studio running on desktop" /></a>
-</p>
-
 <h1 align="center">Phone Mockup Studio</h1>
 
-<p align="center">Build a multi-scene promo video from your screenshot, or rotate a photorealistic 3D phone and export a transparent PNG — right in your browser. No signup, no watermark, no build step.</p>
+<p align="center">Turn screenshots and screen recordings into multi-scene promo videos, or create a 3D phone mockup and export a transparent PNG. Everything renders locally in your browser.</p>
 
-<p align="center"><strong>▶ Live app: <a href="https://quentin-pla.github.io/phone-mockup-studio/">quentin-pla.github.io/phone-mockup-studio</a></strong></p>
+<p align="center"><strong>10 scene presets · MP4 / WebM · Native 4K · Portable projects</strong><br>No account, no watermark, no build step.</p>
 
 <p align="center">
-  <a href="https://quentin-pla.github.io/phone-mockup-studio/"><img src="screenshots/mockup-portrait.png" width="24%" alt="Transparent PNG exported from the app, mobile portrait screenshot rendered on an iPhone 15 Pro Max" /></a>
-  <a href="https://quentin-pla.github.io/phone-mockup-studio/"><img src="screenshots/mockup-landscape.png" width="24%" alt="Transparent PNG exported from the app, mobile landscape screenshot rendered on an iPhone 15 Pro Max" /></a>
+  <img src="screenshots/app-desktop.png" width="100%" alt="Current Promo Studio desktop interface with a scene library, 3D phone preview, per-scene inspector and video timeline" />
 </p>
 
-<p align="center"><sub>PNGs the app itself exported — mobile screenshots rendered onto an iPhone 15 Pro Max.</sub></p>
+<p align="center"><sub>Actual screenshots of the current application, captured from a local server. UI labels below match the editor.</sub></p>
 
-## Promo editor
+## Start here
 
-The default workspace is a promo generator with a scene library, a central live preview, a scene inspector, and an editable timeline. The original editor remains available under **Quick mockup**.
+### Windows — one click
 
-1. Choose **Product launch**, **Minimal story**, or **App showcase**, or build your own sequence from nine scene presets.
-2. Click **Slika / video za ovu scenu** or drag a file into the workspace. Each scene can have its own image or screen recording. Click an imported asset in the library to reuse it, or use **Primeni ovaj medij na sve scene**.
-3. Click a scene on the timeline (or choose it in **Izabrana scena**) to edit only that scene’s title, subtitle/link, duration (1–120 seconds), palette, and fade/cut transition. Selection scrolls its inspector back to the text fields. Under **Izgled teksta ove scene**, independently set font, size, vertical position, alignment, and title/subtitle visibility. These settings are preserved in saved projects and use the same renderer in preview and export. Add, duplicate, remove, drag to reorder, or use the left/right buttons. Up to 36 scenes.
-4. Preview or scrub the complete sequence. Choose 9:16, 1:1, or 16:9 and 720p, 1080p, or native 4K output (2160×3840 portrait, 3840×2160 landscape, 2160×2160 square). The preview stays lightweight; export uses the selected native resolution.
-5. Click **Export promo** to download the entire composition: real 3D phone motion, background, typography, and transitions, rendered from the same timeline as the preview. Recording runs in real time at a target of 30 FPS and has no audio; keep the tab visible. Output is WebM or MP4 depending on browser support.
+1. [Download the project ZIP](https://github.com/Blagii/phone-mockup-studio/archive/refs/heads/main.zip) and **extract the entire archive into a new folder**.
+2. Install **Python 3** if needed. Enable **Add Python to PATH** during installation.
+3. Double-click **`START-STUDIO.bat`** in the extracted folder.
+4. The launcher opens the application in your browser. **Keep its terminal window open.** Stop the server with **Ctrl+C**.
 
-**Sačuvaj projekat** downloads a JSON project including scenes, all imported images/videos/logos, overlay layers, device/color/lighting settings, output settings, image adjustments, filters, and model selection. Version 1 projects remain supported. **Otvori** restores it. Projects are local files, not cloud storage. The layout also adapts to mobile screens.
+Do **not** open `index.html` by double-clicking it, run the app inside the ZIP, or mix files from different versions. Serbian startup instructions are also included in [POKRETANJE.txt](POKRETANJE.txt).
 
-### Media, devices and layers
+### macOS / Linux, or a terminal on Windows
 
-- **Image and video input:** PNG, JPEG, WebP, GIF, AVIF, MP4, WebM, and MOV when the browser can decode them. Drag & drop or use the file picker. Each asset is limited to 50 MiB, the library to 32 assets / 120 MiB. Files stay local; nothing is uploaded. Browser-recorded WebM files without duration metadata are probed locally.
-- **Per-scene content:** choose an asset independently for each shot, set a video start offset, and reuse assets across scenes. Videos are synchronized with the timeline, loop if needed, and are muted. Image position, zoom, rotation, fit mode and brightness/contrast/saturation are stored independently for each scene. The advanced controls restore the selected scene’s values; duplicating or resetting a scene does not change others. Preview and export read scene-local settings directly, and Quick mockup keeps its own settings. Legacy projects migrate their old global crop/filter values into separate per-scene copies.
-- **Duration-synchronized screen scrolling:** under **Automatski skrol slike**, enable vertical scrolling for an individual scene, choose top-to-bottom/bottom-to-top and linear/smooth movement. The image traverses its full vertical overflow from the scene’s first frame to its last, with no independent speed or timer. Scrubbing, playback and export sample the same scene-time function. Scroll uses cover-fit plus an adjustable extra zoom (115% by default, 100% for long screenshots); manual position/filter settings remain stored. During automatic scrolling manual X/Y offsets are applied to the animated position and clamped to cover every screen corner, including with rotation or a low manual zoom, preventing black gaps at scene boundaries. Settings are saved and independently copied with the scene.
-- **Scene/device zoom:** choose **Zumiranje** or **Odzumiranje** as a shot type, or open **Zum uređaja ove scene** on any device scene. Set 25–250% start/end scale and linear or smooth timing; equal values produce static scaling. Movement spans the full scene duration, is saved/copied independently, and leaves titles/logos and screen crop settings unchanged. This is an additional scale relative to the selected motion preset.
-- **Devices:** the existing detailed GLB phone plus original procedural 3D Android, laptop (lid, keyboard, trackpad), and frameless screen options. Device selection is per scene. No external laptop model is needed.
-- **Custom brand colors:** freely choose both gradient background colors, title/accent colors, lighting tint/intensity and device frame color per scene.
-- **Overlay layers:** up to eight text/image layers per scene, including transparent PNG logos. Select a layer to edit its position, size, rotation, color, opacity and visibility interval. Drag it directly in the preview; selection guides never appear in exported video.
-- **Native 4K:** the encoder receives the selected native canvas dimensions. 30 FPS is a target, not a guarantee: real-time encoding performance depends on GPU, codec and browser. Unsupported sizes and recording failures show an error rather than claiming success; select 1080p/720p if needed. Export has no audio.
-- **Portable projects:** JSON embeds the media, so video projects may be large. The project file limit is 185 MB. Media is decoded and validated before replacing the current library; deleting an asset clears its scene references and linked image layers.
-
-The scene presets are original motion compositions inspired by a promo-editor workflow, not copies of external video files.
-
-## Features
-
-- **Import a screenshot** — it maps straight onto the phone's screen, edge to edge (landscape shots are auto-rotated to fit).
-- **Pick a model** — iPhone 15 Pro Max, 17 Pro Max, or 17 Pro.
-- **Rotate freely** in 3D, or snap to one-click ad-angle presets (front, back, hero angles).
-- **Adjust imported images** — cover/fit, zoom, horizontal/vertical position, and rotation with a one-click reset.
-- **One-click video presets** — full 360° turn, slow 360° turn, hero sway, tilt, and gentle roll. Each configures motion, duration, 1080 px, and 30 FPS and starts a preview; then click Export video. Your image and framing stay unchanged.
-- **Adjustable animation** — spin or gentle sway, X/Y/Z axis, speed, and sway angle. Use the auto-spin button to preview.
-- **Export video** — 1–60 seconds, 720/1080/1920 px long edge, and 24/30/60 FPS. Uses native browser recording: WebM (VP8 preferred for reliable encoding), or MP4 depending on browser support. Records the current viewport framing and scene background (no audio); keep the tab visible. Recording can be cancelled, and the original view is restored afterward.
-- **Live screen filters** — brightness, contrast, saturation, applied in real time.
-- **Export a transparent PNG** ready for landing pages, App Store shots, or ads.
-- **Save to Photos on iOS** via the native share sheet.
-- **Multi-language UI** — auto-detected from your browser (English, French, Spanish, German, Italian, Portuguese, Japanese, Chinese), switchable anytime.
-- **Works offline** once loaded — pure client-side Three.js.
-
-## Built for content creators
-
-Making a marketing page, a Canva design, or a Figma mockup for your app? A flat screenshot never looks as good as a screenshot *in a phone*. Phone Mockup Studio exports high-resolution, transparent PNGs you can drop straight into any design tool:
-
-- **Canva & Figma ready** — transparent background means it drops onto any layout, color, or gradient with zero editing.
-- **High-res output**, sized to look sharp on retina displays and large marketing banners alike.
-- **No design skills needed** — pick an ad-angle preset and export; the lighting, reflections, and framing are already done for you.
-- **Free and unlimited** — no per-export watermark, no paid tiers, no account.
-
-## Usage
-
-Open the [live app](https://quentin-pla.github.io/phone-mockup-studio/), choose a model, import your screenshot, frame the shot, and hit export.
-
-### Run locally (Windows: one click)
-
-1. Download this version and **extract the entire ZIP into a new folder**. Do not run inside the ZIP or mix old/new files.
-2. On Windows, double-click **START-STUDIO.bat**. Python 3 must be installed; no npm or pip installation is needed.
-3. The launcher opens the correct local address automatically. Keep its terminal open. If port 8780 is already occupied by an older server, it selects a free port instead.
-4. Stop with Ctrl+C. Do not double-click `index.html`.
-
-On macOS/Linux, or manually on Windows:
+Run from the project folder:
 
 ```bash
 python3 serve.py --open
-# Windows alternative: py -3 serve.py --open
+# Windows: py -3 serve.py --open
 ```
 
-The included server serves from its own project directory (regardless of your terminal directory), explicitly sets JavaScript MIME types, avoids stale code caching, and verifies required files before starting. All runtime Three.js dependencies are bundled locally, so internet access is not required after downloading the complete project. No build step is needed. Optional arguments: `--port 8800` and `--bind 0.0.0.0` (for access from other devices on your network).
+The default address is **http://localhost:8780**. If that port is occupied, the launcher selects another available port and prints/opens the correct address. Always use the address shown in the terminal.
 
-If you see `text/plain` / strict module MIME errors, use this launcher instead of `python -m http.server`. The core module now uses `.js`, not `.mjs`, to avoid Windows MIME associations. If any script still fails to load, the page displays startup troubleshooting instructions rather than leaving an empty loading screen.
+- No npm or pip installation is needed to **run** the app.
+- Three.js and all required runtime modules are bundled in `vendor/three/`; after downloading the project, runtime internet access is not required.
+- The server verifies required files, serves from its own project directory, sets correct JavaScript MIME types and prevents stale application-code caching.
+- Optional arguments: `--port 8800` or `--bind 0.0.0.0` to allow access from other devices on your network.
+- Chrome or Edge is recommended for desktop editing and recording. Encoder availability depends on your browser and operating system.
 
-## Tests
+## Current interface
 
-Run the dependency-free regression tests:
+The default workspace is **Promo editor**: presets and media on the left, a live preview in the center, scene settings on the right, and a timeline below. **Quick mockup** opens the original free-rotation editor without discarding your promo project.
+
+Click an image to view it at full resolution.
+
+<table>
+  <tr>
+    <td width="50%"><a href="screenshots/scene-controls.png"><img src="screenshots/scene-controls.png" alt="Static phone preset with independent device zoom and horizontal and vertical position controls" /></a><br><strong>Device zoom and positioning</strong></td>
+    <td width="50%"><a href="screenshots/phone-case.png"><img src="screenshots/phone-case.png" alt="Phone frame settings showing a matte blue finish and the available case color controls" /></a><br><strong>Frame colors and finishes</strong></td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="screenshots/video-export.png"><img src="screenshots/video-export.png" alt="Current video export controls with aspect ratio, resolution, MP4 selection and browser support information" /></a><br><strong>Explicit MP4 / WebM export</strong></td>
+    <td width="50%"><a href="screenshots/quick-editor.png"><img src="screenshots/quick-editor.png" alt="Quick mockup workspace with the detailed 3D iPhone and original screenshot and animation controls" /></a><br><strong>Quick mockup workspace</strong></td>
+  </tr>
+</table>
+
+## Make a promo video
+
+1. Choose **Product launch**, **Minimal story**, or **App showcase**, or add individual scene presets.
+2. Click **Slika / video za ovu scenu** or drag a file onto the workspace. Each scene can use a different image or screen recording. Reuse imported assets from the media library.
+3. Select a scene on the timeline or in **Izabrana scena**. Edit its text, duration, palette, device, media, animation and overlays independently.
+4. Preview with **Play** or scrub the timeline. Add, duplicate, remove, drag to reorder, or move scenes using the left/right buttons.
+5. Under **Video izlaz**, choose an aspect ratio, resolution and **MP4** or **WebM**, then click **Export promo**.
+
+### Ten scene presets
+
+| Preset | What it does |
+| --- | --- |
+| Naslov | Title card with editable text and optional image/video behind it; no device. |
+| Hero reveal | Introduces the device with a 3D reveal. |
+| Macro detail | Close-up framing with a cinematic move. |
+| Smooth orbit | Moves smoothly between two 3D angles. |
+| Slide in | Brings the device into the frame diagonally. |
+| Floating phone | Gentle floating motion and rotation. |
+| Statičan telefon + skrol | Keeps the phone facing forward and still, with image scrolling enabled. |
+| Zumiranje | Zooms the device in over the scene. |
+| Odzumiranje | Zooms the device out over the scene. |
+| Poziv na akciju | Closing title/link card with optional background media. |
+
+Scenes last **1–120 seconds**; the timeline supports up to **36 scenes**. Choose **Soft fade** or **Cut** transitions. New static-scroll scenes default to 8 seconds with no title text and a cut transition.
+
+### Image adjustment versus device position
+
+These are separate controls:
+
+- **Položaj slike i filteri ove scene** changes the image *inside* the device: zoom, horizontal/vertical position, rotation, cover/contain fit, brightness, contrast and saturation. In title scenes it adjusts the background media instead.
+- **Zum i položaj uređaja ove scene** changes the *whole device*: 25–250% starting/ending zoom, easing, and left/right and up/down position. Equal zoom values give a static zoom. Position controls preserve the current preview time and zoom. **Vrati položaj telefona** resets only the device offset.
+
+Image settings, device position, text styling and animations are stored independently for each scene. Duplicating a scene creates independent settings; changing one scene does not change the others. Quick mockup retains its own image settings.
+
+### Automatic image scrolling
+
+Open **Automatski skrol slike** to enable scrolling, choose down/up and linear/smooth movement, and adjust extra zoom. It traverses the complete image overflow over the scene duration: **down starts at the exact top; up starts at the exact bottom**. Manual vertical cropping does not skip the beginning of the animated scroll. Cover-fit and bounded placement prevent exposed black edges, including with rotation.
+
+While adjusting an image, the paused preview shows the normal manual crop. **Prikaži skrol i dok je video pauziran** explicitly switches to the animated crop at the current timeline time. Play and timeline seeking preview the animation; selecting a scene restores its saved manual crop. Pressing Play after manual editing of a scrolling scene restarts that scene at the beginning. Export always uses the animated scroll path when scrolling is enabled.
+
+### Titles, subtitles and overlays
+
+- Each scene has its own title, subtitle, font, alignment, vertical text position and visibility toggles.
+- Under **Izgled teksta ove scene**, **Veličina podnaslova** independently scales the subtitle from **25–500%**. **Podnaslov kao naslov** uses the title's base size, bold weight and color.
+- In **Naslov** and **Poziv na akciju**, **Dodaj sliku u naslovnu scenu** adds media behind the text without a phone. Removing it affects only that scene, not the asset library or other scenes.
+- Add up to **eight text/image overlay layers** per scene, including transparent PNG logos. Adjust position, size, rotation, color, opacity and visibility times, or drag the overlay directly on the preview. Selection guides are not exported.
+
+### Devices and frame styling
+
+Promo scenes support the detailed **iPhone** model, a procedural **Samsung / Android-style** phone, **Laptop**, or **Samo ekran**. The Android-style device is a procedural representation, not the detailed Samsung GLB used in Quick mockup.
+
+In **Maskica / okvir telefona**, choose **Originalni okvir**, **Mat maskica**, **Sjajna maskica**, or **Metalni okvir**, plus a ready-made or custom color. These options style the existing frame's color/material finish; they do not add a separate protective-case mesh. Frame settings are scene-local and included in video export. Background gradient, text/accent colors and lighting tint/intensity can also be customized independently.
+
+## Export MP4 or WebM
+
+Under **Video izlaz → Tip video fajla**, choose **MP4** or **WebM**. There is **no automatic format selection**. WebM is the default; the choice is saved in the project.
+
+- The selected container must be supported by the browser/OS. Unsupported formats show a clear message instead of silently switching or changing a file extension.
+- MP4 uses the browser's native encoder; no online conversion service is used.
+- Aspect ratios: **9:16**, **1:1**, **16:9**.
+- Quality: **720p**, **1080p**, or native **4K**: 2160×3840 portrait, 2160×2160 square, 3840×2160 landscape.
+- Export records the complete composition, including device animation, media, text, overlays and transitions. It is **silent**, runs in **real time**, and targets **30 FPS**. Performance depends on the GPU, browser and encoder.
+- **Keep the tab visible** while recording. Switching away cancels the recording. Export can also be cancelled explicitly without discarding your project.
+- Preview resolution stays lightweight; export allocates the chosen native dimensions. If recording fails or the GPU cannot support the size, try 1080p or 720p.
+
+### Save and reopen projects
+
+**Sačuvaj projekat** produces a portable JSON file containing scenes, media, overlays, colors, frame finishes, typography, image/device adjustments and output settings. **Otvori** restores it. Version 1 projects remain supported. Files are local, not stored in a cloud account.
+
+A **Spremno za preuzimanje** panel retains separate **Preuzmi projekat** and **Preuzmi promo video** links. If the browser blocks an automatic download, click the corresponding link. Links remain available until replaced by a new file of that type or the page closes. Embedded previews also offer opening the app in a new tab if sandbox restrictions prevent downloads. Save/export controls are available on mobile too.
+
+### Media limits
+
+| Item | Limit / support |
+| --- | --- |
+| Image input | PNG, JPEG, WebP, GIF and AVIF |
+| Video input | MP4, WebM and MOV when supported by the browser |
+| Individual asset | 50 MiB |
+| Media library | 32 assets / 120 MiB total |
+| Portable project | 185 MB |
+| Video playback | Muted, looping, with a per-scene start offset |
+
+Media stays local. Project assets are decoded and validated before replacing the current project. Removing an asset clears references to it and associated image overlay layers.
+
+## Quick mockup
+
+The original editor remains available in **Quick mockup**:
+
+- Detailed iPhone 15 Pro Max, iPhone 17 Pro Max, iPhone 17 Pro and Samsung Galaxy S25 Ultra models.
+- Free 3D rotation, front/back/hero angle presets and live lighting.
+- Image fit, crop, zoom, horizontal/vertical position, rotation and filters.
+- Five ready-to-use motion presets, configurable spin/sway and video recording.
+- Quick video: 1–60 seconds, 720/1080/1920 px long edge, 24/30/60 FPS; the browser determines the available recording container. The explicit MP4/WebM selector above belongs to Promo editor.
+- Transparent PNG export for landing pages, app listings, Canva or Figma; native sharing on supported iOS browsers.
+- Browser-language detection and switchable translations for Quick controls.
+
+<details>
+<summary>Example transparent PNG exports from Quick mockup</summary>
+<p align="center">
+  <a href="screenshots/mockup-portrait.png"><img src="screenshots/mockup-portrait.png" width="32%" alt="Transparent portrait phone mockup exported by the Quick editor" /></a>
+  <a href="screenshots/mockup-landscape.png"><img src="screenshots/mockup-landscape.png" width="32%" alt="Transparent landscape phone mockup exported by the Quick editor" /></a>
+</p>
+</details>
+
+## Troubleshooting
+
+| Symptom | What to check |
+| --- | --- |
+| Blank page / `text/plain` module error | Extract the entire ZIP into a new folder and use `START-STUDIO.bat` or `serve.py`, not a generic server or `file://`. |
+| Old UI appears after an update | Stop the old server, use the newly extracted folder and launcher, close the old tab, and hard-refresh with Ctrl+Shift+R. |
+| Missing files on startup | Confirm that `source/`, `vendor/` and the JavaScript files were extracted together. |
+| MP4 or WebM not supported | Choose the other container or a browser/OS with the required encoder. |
+| Download does not start | Use the persistent download link, or open the app outside the embedded preview. |
+| Export fails or runs slowly | Keep the tab visible, close GPU-heavy apps and try 720p/1080p. |
+
+Startup shows a loading screen until Promo editor is initialized, rather than briefly exposing Quick mockup. Genuine startup failures display instructions; unrelated script errors after initialization do not block a working editor. App code is refreshed network-first with an offline fallback; large models remain cache-first.
+
+## Development and tests
+
+The app is static HTML/CSS/ES modules. Node.js is only needed for the optional test suite; Python 3 is also used by local-server tests.
 
 ```bash
-node --test tests/*.test.cjs
+npm test
+# or: node --test tests/*.test.cjs
 ```
 
-`tests/scroll-browser.cjs` verifies top/middle/bottom pixels of an actual long screenshot, reverse direction, duration changes, per-scene isolation, project saving and video export.
-
-`tests/promo-features-browser.cjs` additionally generates small media fixtures to test per-scene images, video playback/trim, all device types, colors, logo/text layers, embedded project roundtrips and native 3840×2160 video export.
-
-`tests/promo-browser.cjs` checks promo creation, image import, timeline operations, playback, aspect ratios, JSON roundtrips, composed video export, cancellation, editor switching and mobile layout.
-
-`tests/browser-smoke.cjs` is an optional Playwright check against the local HTTP server. It verifies the visible upload button, image import, all five moving animation presets, a non-empty video download, and cancellation. Install Playwright in your test environment and run:
+Browser checks require Playwright in your test environment and a running server:
 
 ```bash
-STUDIO_URL=http://localhost:8777 node tests/browser-smoke.cjs
+STUDIO_URL=http://localhost:8780 node tests/promo-browser.cjs
+STUDIO_URL=http://localhost:8780 node tests/startup-browser.cjs
+STUDIO_URL=http://localhost:8780 node tests/video-format-browser.cjs
 ```
 
-Page navigations are network-first (with offline fallback), so refreshed pages get UI fixes instead of stale cached HTML. Models and library assets remain cache-first.
+Other suites cover image adjustments, scene isolation, scrolling, zoom/position, phone finishes, title images, typography, native 4K, portable projects, cancellation and blocked downloads. Browser suites accept `CHROMIUM_PATH` for a custom Chromium executable; `CHROMIUM_SERVERLESS=1` uses `@sparticuz/chromium` arguments when that package is installed. Environment-variable syntax above is for POSIX shells; use `$env:STUDIO_URL='http://localhost:8780'` first in PowerShell.
 
-## Built with
+To refresh the real UI screenshots with Playwright:
 
-- [Three.js](https://threejs.org/) — WebGL rendering, `GLTFLoader`, `OrbitControls`, image-based lighting.
+```bash
+STUDIO_URL=http://localhost:8780 node scripts/capture-screenshots.cjs
+```
 
-## Credits
+The script captures the current desktop workspace, device position controls, frame styling, export settings and Quick mockup at 1660×1050. It edits only the temporary browser session, not application defaults.
 
-The 3D iPhone models are third-party assets under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), sourced from Sketchfab. Full attribution in [CREDITS.md](CREDITS.md).
+## Built with, credits and license
 
-## License
+- [Three.js 0.160.0](https://threejs.org/) — WebGL rendering, `GLTFLoader`, `OrbitControls` and image-based lighting. Required modules are bundled locally under the MIT license; see [vendor/three/LICENSE](vendor/three/LICENSE).
+- Bundled third-party 3D models retain their [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) licenses. Full attribution: [CREDITS.md](CREDITS.md).
+- Application code: [MIT](LICENSE), originally © Quentin PLA. See the repository history for subsequent contributions.
 
-Application code: [MIT](LICENSE) © Quentin PLA.
-The bundled 3D models keep their own CC BY 4.0 licenses — see [CREDITS.md](CREDITS.md).
-
----
-
-*Not affiliated with or endorsed by Apple Inc. "iPhone" is a trademark of Apple Inc., used here only to describe the device models depicted.*
-
-### Statičan telefon + skrol
-Choose **Statičan telefon + skrol** in the preset library or scene type selector, then upload a long screenshot. The phone faces forward and remains still; automatic top-to-bottom image scrolling is already enabled at 100% extra zoom. New preset scenes last 8 seconds, have no titles and use a cut transition. Duration, scroll direction, media and adjustments remain independent per scene and are included in project saves and video exports.
-
-In every preset, adjusting image X/Y, zoom, fit or rotation uses the same manual composition code as the other presets, without scroll constraints. Press Play or seek on the timeline to preview automatic scrolling again. Video export always uses the animated, bounded scroll path. New static scenes use the same centered image adjustment defaults as other presets.
-
-### Device positioning
-Under **Zum i položaj uređaja ove scene**, use **Telefon levo / desno** and **Telefon gore / dole** to position the whole device, including when zoomed in. Position controls preserve the current preview time/zoom, work independently of image cropping and camera zoom, and are saved per scene, independently duplicated and used during video export. **Vrati položaj telefona** resets only the device offset. Older projects default to zero offset.
-
-Image adjustment editing preserves the current scene time, device zoom and device position. This manual-preview mode is shared by all shot types, including switching from static to zoom-in/out; Play, timeline seeking and export use the animated scroll composition.
-
-### Images in title scenes
-**Naslov** and **Poziv na akciju** support scene images behind the text, without a device. Use **Dodaj sliku u naslovnu scenu**, the existing scene upload or a media-library item. Existing image crop/position/rotation/filters apply to the title image too. Remove the image with **Ukloni sliku iz naslovne scene** without deleting the asset or changing other scenes. Text/overlays remain editable above the image. Image assets and adjustments are portable in saved projects and included in video export; old text-only scenes stay unchanged.
-
-### Subtitle size and heading style
-In **Izgled teksta ove scene**, **Veličina podnaslova** independently scales the subtitle from 25–500%. Enable **Podnaslov kao naslov** to use the title font size, bold weight and title color as the subtitle base, then adjust its size as needed. Settings are scene-local, duplicated independently, preserved in projects and used in preview/export. Legacy subtitles retain their original 100% size and regular style.
-
-Selecting/reopening a scene always restores the normal manual image composition while paused. **Prikaži skrol i dok je video pauziran** explicitly switches to the animated crop at the current timeline time. Play/seek enable this preview; image adjustment disables it. Returning to a scene restores its saved manual crop, without rewriting any image or device settings.
-
-Automatic scroll always traverses the complete vertical source range: down starts at the exact top and up starts at the exact bottom, regardless of the saved manual Y crop. Manual positioning remains available in the paused editing view and is not overwritten.
-
-### Phone frame / case styling
-Choose **iPhone** or **Samsung / Android** in the device selector, then open **Maskica / okvir telefona**. Original, matte, glossy and metallic finishes and seven ready colors plus a custom color picker style the existing 3D frame (not a separate protective-case model). Each scene saves its own finish/color; copying is independent, old projects default to the original finish and video export includes the styling. Reset affects only the frame. Quick editor material properties are restored when leaving Promo Studio.
-
-### Saving and browser download restrictions
-Saving a project or finishing video export now also displays a **Spremno za preuzimanje** panel. If automatic downloading is blocked, click **Preuzmi projekat** or **Preuzmi promo video** to download the finished file with a direct user gesture. Links stay available (without a one-minute expiration) until replaced by a new file of the same type or the page is closed. Project and video links are independent. In embedded previews, the panel also offers opening the app in a new tab if the embedding sandbox blocks downloads. Saving is visible on mobile too. Export validation problems and preparation failures are reported in the status area rather than silently returning.
-
-Optional download regression: `NODE_PATH=/path/to/playwright/node_modules STUDIO_URL=http://localhost:8780 node tests/downloads-browser.cjs` (same Chromium/Three options as other browser tests). This blocks automatic anchor downloads, verifies real project and WebM files through persistent user-clicked links, and checks mobile save/export controls.
-
-### Choose MP4 or WebM
-Under **Video izlaz → Tip video fajla**, choose **MP4** or **WebM**. The selected format is saved with the project. WebM is the default for new and legacy projects; automatic format selection is not offered. Explicit MP4/WebM choices only use that container: unsupported choices show a clear message without silently switching formats or renaming a different container. Available encoders depend on the browser/OS. MP4 export is native, not a conversion service.
+Not affiliated with or endorsed by Apple or Samsung. Device trademarks belong to their respective owners. The scene presets are original compositions, not copies of external promo videos.
