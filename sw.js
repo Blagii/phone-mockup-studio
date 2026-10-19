@@ -1,9 +1,14 @@
-// Service worker for Phone Mockup Studio — offline app shell + on-demand asset caching.
-// Bump CACHE when any precached file changes so old copies are evicted.
-const CACHE = "phone-mockup-studio-v70";
+// Versioned offline cache. Navigations use the network first so UI fixes are not
+// trapped behind a cached index.html; large models and library assets stay cached.
+const CACHE = "phone-mockup-studio-v98";
 const PRECACHE = [
     "./",
     "./index.html",
+    "./promo.js",
+    "./promo-media.js",
+    "./promo-devices.js",
+    "./promo.css",
+    "./promo-core.mjs",
     "./manifest.webmanifest",
     "./default-screenshot.jpg",
     "./icon-192.png",
@@ -23,28 +28,46 @@ self.addEventListener("activate", (e) => {
         caches
             .keys()
             .then((keys) =>
-                Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+                Promise.all(keys.filter((k) => k.startsWith("phone-mockup-studio-") && k !== CACHE).map((k) => caches.delete(k)))
             )
             .then(() => self.clients.claim())
     );
 });
 
-// Cache-first, then network; successful GETs (incl. big .glb models + CDN Three.js) are cached on demand.
 self.addEventListener("fetch", (e) => {
     if (e.request.method !== "GET") return;
-    e.respondWith(
-        caches.match(e.request).then(
-            (hit) =>
-                hit ||
-                fetch(e.request)
-                    .then((res) => {
-                        if (res.ok && res.type !== "opaque") {
-                            const copy = res.clone();
-                            caches.open(CACHE).then((c) => c.put(e.request, copy));
-                        }
-                        return res;
-                    })
-                    .catch(() => hit)
-        )
-    );
+    const url = new URL(e.request.url);
+    const isAppShell = e.request.mode === "navigate" ||
+        (url.origin === self.location.origin && (
+            url.pathname.endsWith("/") || url.pathname.endsWith("/index.html") ||
+            /\/(promo\.js|promo-media\.js|promo-devices\.js|promo\.css|promo-core\.mjs)$/.test(url.pathname)
+        ));
+    if (isAppShell) {
+        e.respondWith((async () => {
+            const cache = await caches.open(CACHE);
+            try {
+                const response = await fetch(e.request, { cache: "no-store" });
+                if (response.ok) {
+                    await cache.put(e.request, response.clone());
+                    return response;
+                }
+                return (await cache.match(e.request)) || response;
+            } catch (error) {
+                const cached = await cache.match(e.request);
+                if (cached) return cached;
+                throw error;
+            }
+        })());
+        return;
+    }
+    e.respondWith((async () => {
+        const cache = await caches.open(CACHE);
+        const cached = await cache.match(e.request);
+        if (cached) return cached;
+        const response = await fetch(e.request);
+        if (response.ok && response.type !== "opaque") {
+            await cache.put(e.request, response.clone());
+        }
+        return response;
+    })());
 });
