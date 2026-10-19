@@ -1,0 +1,25 @@
+PHONE MOCKUP STUDIO - POKRETANJE NA WINDOWS-U
+
+1. Raspakuj CEO ZIP u NOVI folder.
+   Nemoj pokretati iz ZIP-a ili kopirati preko stare verzije.
+2. Dvoklik na START-STUDIO.bat.
+3. Pregledac ce automatski otvoriti aplikaciju.
+   Ostavi crni terminal otvoren dok koristis aplikaciju.
+4. Za zaustavljanje: Ctrl+C u terminalu.
+
+NE otvaraj index.html dvoklikom.
+NE pokreci stari server komandom python -m http.server.
+Ova verzija ima svoj serve.py sa ispravnim JavaScript MIME tipovima.
+Ako je port zauzet, server otvara drugi slobodan port i ispisuje adresu.
+
+Ako nedostaje Python:
+Instaliraj Python 3 sa https://www.python.org/downloads/
+Pri instalaciji ukljuci "Add Python to PATH".
+Zatim ponovo pokreni START-STUDIO.bat.
+
+macOS/Linux: python3 serve.py --open
+Windows rucno: py -3 serve.py --open
+
+3D biblioteka je ukljucena u vendor folder. Internet nije potreban.
+Za cuvanje/video: ako preuzimanje ne pocne automatski, klikni
+"Preuzmi projekat" ili "Preuzmi promo video" u prikazanom prozoru.

@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const core = import('../promo-core.mjs');
+const core = import('../promo-core.js');
 test('export sizes are native 720p, 1080p and 4K for every aspect', async () => {
     const { outputSize } = await core;
     assert.deepEqual(outputSize('vertical','720'),[720,1280]);

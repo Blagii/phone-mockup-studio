@@ -27,7 +27,7 @@ const path=require('node:path');
   assert.equal(await page.locator('#promo-duration').inputValue(),'8');
   assert.equal(await page.locator('#scene-scroll-enabled').isChecked(),true);
   const image=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=300;c.height=1800;const g=c.getContext('2d');for(const [color,y]of[['#ee2020',0],['#20dd20',600],['#2020ee',1200]]){g.fillStyle=color;g.fillRect(0,y,300,600);for(let row=y;row<y+600;row++){const v=(Math.imul(row+1,2654435761)>>>24)%31;g.fillStyle=y===0?`rgb(238,${v},${v})`:y===600?`rgb(${v},221,${v})`:`rgb(${v},${v},238)`;g.fillRect(0,row,300,1);}}return c.toDataURL('image/png');});
-  const core=await import('../promo-core.mjs');
+  const core=await import('../promo-core.js');
   const project={version:2,assets:[{id:'long',type:'image',name:'long.png',data:image}],scenes:[core.makeScene('staticScroll',{duration:4,mediaId:'long',transition:'cut',screenAdjust:{image:{x:45,y:100,zoom:70,angle:12,fit:'cover'}}})]};
   const [chooser]=await Promise.all([page.waitForEvent('filechooser'),page.click('#promo-open')]);await chooser.setFiles({name:'scroll.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});
   await page.waitForFunction(()=>document.querySelectorAll('.timeline-scene').length===1);

@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const core = import('../promo-core.mjs');
+const core = import('../promo-core.js');
 test('templates contain unique editable scenes and known themes', async () => {
     const { makeTemplate, SHOTS, THEMES } = await core;
     for (const kind of ['launch', 'minimal', 'showcase']) {

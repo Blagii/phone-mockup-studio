@@ -1,5 +1,5 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const vm=require('node:vm');
-const core=import('../promo-core.mjs');
+const core=import('../promo-core.js');
 const code=fs.readFileSync(require.resolve('../promo.js'),'utf8');
 const renderer=code.slice(code.indexOf('    function drawTitleMedia('),code.indexOf('    function drawComposition('));
 test('title media uses scene-local image transforms and filters without mutating settings',async()=>{

@@ -1,4 +1,4 @@
-import { SHOTS, THEMES, makeScene, makeTemplate, totalDuration, sceneAt, sceneOpacity, validateProject, clamp, ease, DEVICES, styleFor, outputSize, makeOverlay, normalizeScreenSettings, screenSettingsAt, MAX_SCENE_DURATION, poseForScene, normalizeCameraZoom, PHONE_CASES } from './promo-core.mjs';
+import { SHOTS, THEMES, makeScene, makeTemplate, totalDuration, sceneAt, sceneOpacity, validateProject, clamp, ease, DEVICES, styleFor, outputSize, makeOverlay, normalizeScreenSettings, screenSettingsAt, MAX_SCENE_DURATION, poseForScene, normalizeCameraZoom, PHONE_CASES } from './promo-core.js';
 
 import { createMediaLibrary } from './promo-media.js';
 
@@ -306,18 +306,43 @@ export function initPromoStudio(api) {
         if (active) api.setAspect(w / h);
     }
     $('promo-ratio').onchange = resizeOutput; $('promo-quality').onchange = resizeOutput;
+    // Keep completed files reachable even if async/embedded automatic downloads
+    // are blocked. Replacing a slot releases only that slot's old Blob URL.
+    const downloads = new Map();
+    const downloadPanel = document.createElement('section');
+    downloadPanel.id = 'promo-downloads'; downloadPanel.hidden = true;
+    downloadPanel.setAttribute('aria-label', 'Fajlovi spremni za preuzimanje');
+    downloadPanel.innerHTML = '<div class="download-heading"><strong>Spremno za preuzimanje</strong><button type="button" aria-label="Zatvori preuzimanja">×</button></div><p>Ako preuzimanje nije počelo, klikni na fajl ispod.</p><div id="promo-download-links"></div>';
+    downloadPanel.querySelector('button').onclick = () => { downloadPanel.hidden = true; };
+    document.body.append(downloadPanel);
+    if (window.self !== window.top) {
+        const standalone = document.createElement('a');
+        standalone.href = window.location.href; standalone.target = '_blank'; standalone.rel = 'noopener';
+        standalone.textContent = 'Ako pregled blokira preuzimanja, otvori aplikaciju u novoj kartici.';
+        standalone.className = 'download-standalone'; downloadPanel.append(standalone);
+    }
     function download(blob, name) {
-        const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+        const slot = blob.type === 'application/json' ? 'project' : 'video';
+        const url = URL.createObjectURL(blob), a = document.createElement('a');
+        a.href = url; a.download = name; a.className = 'promo-file-download';
+        a.dataset.file = slot;
+        a.textContent = `↓ ${slot === 'project' ? 'Preuzmi projekat' : 'Preuzmi promo video'} · ${(blob.size / 1024 / 1024).toFixed(2)} MB`;
+        const previous = downloads.get(slot);
+        if (previous) { previous.link.remove(); URL.revokeObjectURL(previous.url); }
+        downloads.set(slot, { url, link:a });
+        $('promo-download-links').append(a); downloadPanel.hidden = false;
+        // A real, persistent link remains available regardless of this attempt.
+        try { a.click(); } catch (error) { console.warn('Automatsko preuzimanje je blokirano; koristi link za fajl.', error); }
     }
     $('promo-save').onclick = async () => {
         if (recording || mediaBusy) return notice('Sačekaj da se mediji učitaju.');
-        const button = $('promo-save'); button.disabled = true;
+        const button = $('promo-save'); button.disabled = true; notice('Priprema projekta i medija za čuvanje…');
         try {
             const project = { version: 2, scenes: structuredClone(scenes), image: api.getImageData(), format: $('promo-ratio').value, quality: $('promo-quality').value, screen: api.getScreenSettings() };
             project.assets = await media.serialize();
             download(new Blob([JSON.stringify(project)], { type: 'application/json' }), 'promo-studio.json');
-            notice('Projekat sa svim slikama, video klipovima i slojevima je preuzet.');
-        } catch { notice('Čuvanje projekta nije uspelo. Pokušaj sa manjim medijima.'); }
+            notice('Projekat je spreman. Ako preuzimanje nije počelo, klikni „Preuzmi projekat“.');
+        } catch (error) { console.error('Čuvanje projekta:', error); notice(`Čuvanje projekta nije uspelo: ${error.message || 'pokušaj sa manjim medijima'}`); }
         finally { button.disabled = !!recording; }
     };
     $('promo-open').onclick = () => projectInput.click();
@@ -597,11 +622,14 @@ export function initPromoStudio(api) {
         if (recording) return;
         if (mediaBusy) return notice('Sačekaj da se mediji učitaju.');
         if (scenes.some(s => s.overlays.some(o => o.start >= s.duration || (o.end != null && o.end <= o.start)))) return notice('Proveri vremena slojeva: početak mora biti pre kraja scene, a kraj posle početka.');
-        if (!$('promo-duration').reportValidity()) return;
-        if (chosen().cameraZoom.enabled && (!$('scene-zoom-from').reportValidity() || !$('scene-zoom-to').reportValidity())) return;
+        if (!$('promo-duration').reportValidity()) return notice('Proveri trajanje izabrane scene: 1–120 s, korak 0,5 s.');
+        if (chosen().cameraZoom.enabled && (!$('scene-zoom-from').checkValidity() || !$('scene-zoom-to').checkValidity())) {
+            $('scene-camera-options').open = true;
+            return notice('Proveri zum uređaja: početak i kraj moraju biti celi brojevi od 25 do 250%.');
+        }
         if (!api.ready()) return notice('Sačekaj da se 3D model učita.');
         const types = ['video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm', 'video/mp4'];
-        const mime = typeof MediaRecorder !== 'undefined' && types.find(type => MediaRecorder.isTypeSupported(type));
+        const mime = typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function' && types.find(type => MediaRecorder.isTypeSupported(type));
         if (!mime || !canvas.captureStream) return notice('Ovaj pregledač ne podržava video izvoz. Probaj Chrome ili Edge.');
         const savedTime = currentTime;
         const [exportWidth, exportHeight] = outputSize($('promo-ratio').value, $('promo-quality').value);
@@ -636,7 +664,7 @@ export function initPromoStudio(api) {
                 const blob = new Blob(chunks, { type: recorder.mimeType || mime });
                 if (!blob.size) return notice('Pregledač nije snimio video. Probaj 720p ili drugi pregledač.');
                 const ext = blob.type.includes('mp4') ? 'mp4' : 'webm'; download(blob, 'moj-promo.' + ext);
-                notice(`Promo preuzet · ${duration()} s · ${exportWidth} × ${exportHeight} · ${ext.toUpperCase()}`);
+                notice(`Video je spreman · ${duration()} s · ${exportWidth} × ${exportHeight} · ${ext.toUpperCase()}. Ako nije preuzet, klikni „Preuzmi promo video“.`);
             };
             recording = {
                 get started() { return start !== null; },

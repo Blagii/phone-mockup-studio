@@ -69,16 +69,23 @@ Making a marketing page, a Canva design, or a Figma mockup for your app? A flat 
 
 Open the [live app](https://quentin-pla.github.io/phone-mockup-studio/), choose a model, import your screenshot, frame the shot, and hit export.
 
-### Run locally
+### Run locally (Windows: one click)
 
-Because the app fetches `.glb` models over HTTP, it needs a local server (opening the file directly with `file://` won't load the models):
+1. Download this version and **extract the entire ZIP into a new folder**. Do not run inside the ZIP or mix old/new files.
+2. On Windows, double-click **START-STUDIO.bat**. Python 3 must be installed; no npm or pip installation is needed.
+3. The launcher opens the correct local address automatically. Keep its terminal open. If port 8780 is already occupied by an older server, it selects a free port instead.
+4. Stop with Ctrl+C. Do not double-click `index.html`.
+
+On macOS/Linux, or manually on Windows:
 
 ```bash
-git clone https://github.com/quentin-pla/phone-mockup-studio.git
-cd phone-mockup-studio
-python3 -m http.server 8777
-# open http://localhost:8777
+python3 serve.py --open
+# Windows alternative: py -3 serve.py --open
 ```
+
+The included server serves from its own project directory (regardless of your terminal directory), explicitly sets JavaScript MIME types, avoids stale code caching, and verifies required files before starting. All runtime Three.js dependencies are bundled locally, so internet access is not required after downloading the complete project. No build step is needed. Optional arguments: `--port 8800` and `--bind 0.0.0.0` (for access from other devices on your network).
+
+If you see `text/plain` / strict module MIME errors, use this launcher instead of `python -m http.server`. The core module now uses `.js`, not `.mjs`, to avoid Windows MIME associations. If any script still fails to load, the page displays startup troubleshooting instructions rather than leaving an empty loading screen.
 
 ## Tests
 
@@ -141,3 +148,8 @@ Automatic scroll always traverses the complete vertical source range: down start
 
 ### Phone frame / case styling
 Choose **iPhone** or **Samsung / Android** in the device selector, then open **Maskica / okvir telefona**. Original, matte, glossy and metallic finishes and seven ready colors plus a custom color picker style the existing 3D frame (not a separate protective-case model). Each scene saves its own finish/color; copying is independent, old projects default to the original finish and video export includes the styling. Reset affects only the frame. Quick editor material properties are restored when leaving Promo Studio.
+
+### Saving and browser download restrictions
+Saving a project or finishing video export now also displays a **Spremno za preuzimanje** panel. If automatic downloading is blocked, click **Preuzmi projekat** or **Preuzmi promo video** to download the finished file with a direct user gesture. Links stay available (without a one-minute expiration) until replaced by a new file of the same type or the page is closed. Project and video links are independent. In embedded previews, the panel also offers opening the app in a new tab if the embedding sandbox blocks downloads. Saving is visible on mobile too. Export validation problems and preparation failures are reported in the status area rather than silently returning.
+
+Optional download regression: `NODE_PATH=/path/to/playwright/node_modules STUDIO_URL=http://localhost:8780 node tests/downloads-browser.cjs` (same Chromium/Three options as other browser tests). This blocks automatic anchor downloads, verifies real project and WebM files through persistent user-clicked links, and checks mobile save/export controls.

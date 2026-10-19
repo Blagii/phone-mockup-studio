@@ -752,11 +752,31 @@
 
         <input type="file" id="file-shot" accept="image/*" hidden />
 
+        <section id="startup-error" hidden role="alert" style="position:fixed;inset:15% 8% auto;z-index:99999;padding:24px;background:#20212a;color:white;border:1px solid #b98458;border-radius:12px;font:16px/1.6 system-ui">
+            <strong>Aplikacija nije uspela da se pokrene</strong>
+            <p id="startup-error-message"></p>
+            <p>Raspakuj ceo ZIP u novi folder i pokreni <b>START-STUDIO.bat</b> (Windows), ili <b>python3 serve.py --open</b>. Nemoj otvarati index.html dvoklikom.</p>
+            <p>Otvori adresu koju ispiše server, pa pritisni Ctrl+Shift+R. Zaustavi stari server sa Ctrl+C.</p>
+        </section>
+        <script>
+            function showStartupError(message) {
+                document.getElementById('startup-error-message').textContent = message;
+                document.getElementById('startup-error').hidden = false;
+            }
+            if (location.protocol === 'file:') showStartupError('Stranica je otvorena kao fajl. JavaScript moduli zahtevaju lokalni HTTP server.');
+            window.addEventListener('error', function (event) {
+                if (event.target && event.target.tagName === 'SCRIPT') {
+                    showStartupError('JavaScript modul nije učitan. Proveri da li su svi fajlovi raspakovani i da li server šalje .js kao JavaScript, ne text/plain.');
+                } else if (event.error) {
+                    showStartupError(event.message || 'Greška pri pokretanju JavaScript aplikacije.');
+                }
+            }, true);
+        </script>
         <script type="importmap">
             {
                 "imports": {
-                    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-                    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+                    "three": "./vendor/three/build/three.module.js",
+                    "three/addons/": "./vendor/three/examples/jsm/"
                 }
             }
         </script>
@@ -764,7 +784,7 @@
         <script type="module">
             import * as THREE from "three";
             import { initPromoStudio } from "./promo.js";
-            import { normalizeScreenSettings, scrollPlacement, caseMaterial } from "./promo-core.mjs";
+            import { normalizeScreenSettings, scrollPlacement, caseMaterial } from "./promo-core.js";
             import { createPromoDevices } from "./promo-devices.js";
             import { OrbitControls } from "three/addons/controls/OrbitControls.js";
             import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";

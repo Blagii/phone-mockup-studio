@@ -1,4 +1,4 @@
-import { scrollPlacement, caseMaterial } from './promo-core.mjs';
+import { scrollPlacement, caseMaterial } from './promo-core.js';
 // Original procedural devices; no third-party laptop assets or model downloads.
 export function createPromoDevices(THREE, parent) {
     const groups = {}, displays = {}, shells = [];

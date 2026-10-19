@@ -65,7 +65,7 @@ test('automatic scroll aligns long images from their top edge to their bottom ed
     const positions=[];const g=new Proxy({}, {get:(_,method)=>(...args)=>{if(method==='translate')positions.push(args[1]);},set:()=>true});
     const sandbox={document:{createElement:()=>({getContext:()=>g})},currentModel:{screenInset:null},imageAdjust:{zoom:100,x:0,y:100,angle:0,fit:'cover'},THREE:{MathUtils:{degToRad:n=>n*Math.PI/180}},filterString:()=> 'none'};
     vm.createContext(sandbox);vm.runInContext(source,sandbox);
-    sandbox.scrollPlacement = (await import('../promo-core.mjs')).scrollPlacement;
+    sandbox.scrollPlacement = (await import('../promo-core.js')).scrollPlacement;
     for(const scroll of [0,.5,1])sandbox.composeScreenCanvas({width:300,height:1800},null,{image:{...sandbox.imageAdjust,scroll}});
     // Rendered image height is 7074; screen height 2556. Start/end expose the exact edges.
     assert.equal(positions[0]-7074/2,0);assert.equal(positions[1],1278);assert.equal(positions[2]+7074/2,2556);
