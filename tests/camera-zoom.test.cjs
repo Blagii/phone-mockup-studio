@@ -1,4 +1,4 @@
-const {test}=require('node:test');const assert=require('node:assert/strict');const core=import('../promo-core.mjs');
+const {test}=require('node:test');const assert=require('node:assert/strict');const core=import('../promo-core.js');
 test('zoom-in and zoom-out shots animate in opposite directions across the whole scene',async()=>{
  const {makeScene,poseForScene,sceneAt}=await core;
  for(const duration of [2,10,60,120])for(const shot of ['zoomin','zoomout']){

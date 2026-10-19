@@ -1,6 +1,6 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const core=import('../promo-core.mjs');
+const core=import('../promo-core.js');
 test('scroll maps the whole scene duration to top, middle and bottom',async()=>{
  const {makeScene,sceneAt,screenSettingsAt}=await core;
  for(const duration of [2,4,10,12,30,60,120]){

@@ -12,3 +12,7 @@ They are **not** covered by this project's MIT license — reuse them under thei
 
 These models are fan-made visualizations and are not official Apple assets.
 "iPhone" is a trademark of Apple Inc. This project is not affiliated with or endorsed by Apple Inc.
+
+## Bundled Three.js runtime
+
+Three.js 0.160.0, copyright 2010–2023 Three.js authors, distributed under the MIT license. Required unmodified modules are included under `vendor/three/`; see `vendor/three/LICENSE`. Source: https://github.com/mrdoob/three.js/tree/r160 .

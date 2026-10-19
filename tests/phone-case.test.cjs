@@ -1,4 +1,4 @@
-const {test}=require('node:test');const assert=require('node:assert/strict');const core=import('../promo-core.mjs');
+const {test}=require('node:test');const assert=require('node:assert/strict');const core=import('../promo-core.js');
 test('phone case finish/color are scene-local, independently copied and portable',async()=>{
  const {makeScene,validateProject,styleFor,caseMaterial}=await core;
  const a=makeScene('hero',{phoneCase:{finish:'matte'},colors:{frame:'#e89fad'}});

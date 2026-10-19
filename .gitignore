@@ -12,3 +12,6 @@ _build/
 node_modules/
 
 .idea
+# Python local server cache
+__pycache__/
+*.pyc

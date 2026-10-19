@@ -20,6 +20,15 @@
         />
         <link rel="apple-touch-icon" href="apple-touch-icon.png" />
         <style>
+            /* Critical startup styles run before modules or external CSS load. */
+            body.studio-booting { background:#0c0e10 !important; }
+            body.studio-booting > :not(#studio-boot):not(#startup-error) { visibility:hidden !important; }
+            #studio-boot { display:none; }
+            body.studio-booting #studio-boot { position:fixed; inset:0; z-index:10000; display:grid; place-content:center; justify-items:center; gap:16px; background:#0c0e10; color:#eaf0e8; font:15px system-ui,sans-serif; }
+            #studio-boot .boot-spinner { width:30px; height:30px; border:3px solid #334035; border-top-color:#c6f295; border-radius:50%; animation:studio-boot-spin 1s linear infinite; }
+            @keyframes studio-boot-spin { to { transform:rotate(360deg); } }
+            @media (prefers-reduced-motion:reduce) { #studio-boot .boot-spinner { animation:none; } }
+
             :root {
                 --bg: #ffffff;
                 --panel: #1e1e26;
@@ -470,7 +479,13 @@
         </style>
         <link rel="stylesheet" href="promo.css" />
     </head>
-    <body>
+    <body class="studio-booting">
+        <div id="studio-boot" role="status" aria-live="polite">
+            <span class="boot-spinner" aria-hidden="true"></span>
+            <strong>Promo Studio</strong>
+            <span>Učitavanje editora…</span>
+            <noscript>Za pokretanje aplikacije uključi JavaScript u pregledaču.</noscript>
+        </div>
         <div id="stage">
             <div id="canvas-wrap"></div>
             <div id="loader">
@@ -752,19 +767,51 @@
 
         <input type="file" id="file-shot" accept="image/*" hidden />
 
+        <section id="startup-error" hidden role="alert" style="position:fixed;inset:15% 8% auto;z-index:99999;padding:24px;background:#20212a;color:white;border:1px solid #b98458;border-radius:12px;font:16px/1.6 system-ui">
+            <button type="button" id="startup-error-close" aria-label="Zatvori obaveštenje" style="float:right;background:transparent;border:0;color:white;font-size:24px;cursor:pointer">×</button>
+            <strong>Aplikacija nije uspela da se pokrene</strong>
+            <p id="startup-error-message"></p>
+            <p>Raspakuj ceo ZIP u novi folder i pokreni <b>START-STUDIO.bat</b> (Windows), ili <b>python3 serve.py --open</b>. Nemoj otvarati index.html dvoklikom.</p>
+            <p>Otvori adresu koju ispiše server, pa pritisni Ctrl+Shift+R. Zaustavi stari server sa Ctrl+C.</p>
+        </section>
+        <script>
+            let studioStarted = false;
+            window.markStudioStarted = function () {
+                studioStarted = true;
+                document.body.classList.remove('studio-booting');
+                document.getElementById('startup-error').hidden = true;
+            };
+            document.getElementById('startup-error-close').onclick = function () {
+                document.getElementById('startup-error').hidden = true;
+            };
+            function showStartupError(message) {
+                if (studioStarted) return;
+                document.getElementById('startup-error-message').textContent = message;
+                document.getElementById('startup-error').hidden = false;
+            }
+            if (location.protocol === 'file:') showStartupError('Stranica je otvorena kao fajl. JavaScript moduli zahtevaju lokalni HTTP server.');
+            window.addEventListener('error', function (event) {
+                if (studioStarted) return;
+                if (event.target === document.getElementById('studio-entry')) {
+                    showStartupError('JavaScript modul nije učitan. Proveri da li su svi fajlovi raspakovani i da li server šalje .js kao JavaScript, ne text/plain.');
+                } else if (event.error) {
+                    showStartupError(event.message || 'Greška pri pokretanju JavaScript aplikacije.');
+                }
+            }, true);
+        </script>
         <script type="importmap">
             {
                 "imports": {
-                    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-                    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+                    "three": "./vendor/three/three.module.js",
+                    "three/addons/": "./vendor/three/examples/jsm/"
                 }
             }
         </script>
 
-        <script type="module">
+        <script type="module" id="studio-entry">
             import * as THREE from "three";
             import { initPromoStudio } from "./promo.js";
-            import { normalizeScreenSettings, scrollPlacement, caseMaterial } from "./promo-core.mjs";
+            import { normalizeScreenSettings, scrollPlacement, caseMaterial } from "./promo-core.js";
             import { createPromoDevices } from "./promo-devices.js";
             import { OrbitControls } from "three/addons/controls/OrbitControls.js";
             import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
@@ -3576,6 +3623,10 @@
                     });
                 },
             });
+
+            // Successful initialization makes unrelated/injected script errors
+            // ineligible for the fatal startup overlay.
+            window.markStudioStarted();
 
             // Boot: preload the default screenshot into lastShotImg so the first model (and every switch)
             // composites it automatically via the existing recompose path.

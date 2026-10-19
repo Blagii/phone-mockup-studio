@@ -38,7 +38,7 @@ test('explicit index.html also uses network-first', async () => {
     assert.equal(await setup().request('/index.html', 'cors'), 'new UI');
 });
 test('promo modules and styles also bypass stale cached versions', async () => {
-    for (const file of ['promo.js', 'promo.css', 'promo-core.mjs']) {
+    for (const file of ['promo.js', 'promo.css', 'promo-core.js']) {
         assert.equal(await setup().request('/' + file, 'cors'), 'new UI');
     }
 });
