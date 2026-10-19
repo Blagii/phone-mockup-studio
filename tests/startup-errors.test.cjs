@@ -5,7 +5,7 @@ const script=html.slice(start,html.indexOf('</script>',start));
 function setup(){
  const nodes={'startup-error':{hidden:true},'startup-error-message':{},'startup-error-close':{},'studio-entry':{tagName:'SCRIPT'}};
  let errorHandler;const window={addEventListener:(name,handler)=>{if(name==='error')errorHandler=handler;}};
- vm.runInNewContext(script,{window,document:{getElementById:id=>nodes[id]},location:{protocol:'http:'}});
+ vm.runInNewContext(script,{window,document:{getElementById:id=>nodes[id],body:{classList:{remove(){}}}},location:{protocol:'http:'}});
  return {nodes,window,dispatch:event=>errorHandler(event)};
 }
 test('only the application entry module resource failure is treated as fatal startup failure',()=>{

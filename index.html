@@ -20,6 +20,15 @@
         />
         <link rel="apple-touch-icon" href="apple-touch-icon.png" />
         <style>
+            /* Critical startup styles run before modules or external CSS load. */
+            body.studio-booting { background:#0c0e10 !important; }
+            body.studio-booting > :not(#studio-boot):not(#startup-error) { visibility:hidden !important; }
+            #studio-boot { display:none; }
+            body.studio-booting #studio-boot { position:fixed; inset:0; z-index:10000; display:grid; place-content:center; justify-items:center; gap:16px; background:#0c0e10; color:#eaf0e8; font:15px system-ui,sans-serif; }
+            #studio-boot .boot-spinner { width:30px; height:30px; border:3px solid #334035; border-top-color:#c6f295; border-radius:50%; animation:studio-boot-spin 1s linear infinite; }
+            @keyframes studio-boot-spin { to { transform:rotate(360deg); } }
+            @media (prefers-reduced-motion:reduce) { #studio-boot .boot-spinner { animation:none; } }
+
             :root {
                 --bg: #ffffff;
                 --panel: #1e1e26;
@@ -470,7 +479,13 @@
         </style>
         <link rel="stylesheet" href="promo.css" />
     </head>
-    <body>
+    <body class="studio-booting">
+        <div id="studio-boot" role="status" aria-live="polite">
+            <span class="boot-spinner" aria-hidden="true"></span>
+            <strong>Promo Studio</strong>
+            <span>Učitavanje editora…</span>
+            <noscript>Za pokretanje aplikacije uključi JavaScript u pregledaču.</noscript>
+        </div>
         <div id="stage">
             <div id="canvas-wrap"></div>
             <div id="loader">
@@ -763,6 +778,7 @@
             let studioStarted = false;
             window.markStudioStarted = function () {
                 studioStarted = true;
+                document.body.classList.remove('studio-booting');
                 document.getElementById('startup-error').hidden = true;
             };
             document.getElementById('startup-error-close').onclick = function () {
