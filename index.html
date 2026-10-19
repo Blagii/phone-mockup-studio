@@ -96,6 +96,7 @@
                 color: var(--text-dim);
                 font-weight: 600;
             }
+            [hidden] { display: none !important; }
             button,
             select {
                 font: inherit;
@@ -467,6 +468,7 @@
                 }
             }
         </style>
+        <link rel="stylesheet" href="promo.css" />
     </head>
     <body>
         <div id="stage">
@@ -549,6 +551,21 @@
 
             <div class="divider"></div>
 
+            <details open>
+                <summary>Image adjustments / Podešavanje slike</summary>
+                <div class="group" style="margin-top: 4px">
+                    <label for="image-fit">Image fit</label>
+                    <select id="image-fit"><option value="cover">Cover — fill screen</option><option value="contain">Fit — entire image</option></select>
+                    <div class="slider-row"><label for="image-zoom">Zoom <b id="v-image-zoom">100%</b></label><input id="image-zoom" type="range" min="25" max="300" value="100"></div>
+                    <div class="slider-row"><label for="image-x">Horizontal position <b id="v-image-x">0%</b></label><input id="image-x" type="range" min="-100" max="100" value="0"></div>
+                    <div class="slider-row"><label for="image-y">Vertical position <b id="v-image-y">0%</b></label><input id="image-y" type="range" min="-100" max="100" value="0"></div>
+                    <div class="slider-row"><label for="image-angle">Image rotation <b id="v-image-angle">0°</b></label><input id="image-angle" type="range" min="-180" max="180" value="0"></div>
+                    <button id="image-reset">Reset image adjustments</button>
+                    <div class="hint">Position is relative to screen size. Empty areas are black. Landscape imports are first rotated to match the device.</div>
+                </div>
+            </details>
+            <div class="divider"></div>
+
             <details open id="filters-block">
                 <summary data-i18n="filtersTitle">Screen filters</summary>
                 <div class="group" style="margin-top: 4px">
@@ -623,6 +640,39 @@
                 </button>
             </div>
 
+            <div class="divider"></div>
+
+            <details open>
+                <summary>Animation &amp; video / Animacija i video</summary>
+                <div class="group" style="margin-top: 4px">
+                    <label for="video-preset">Video preset — gotova animacija</label>
+                    <select id="video-preset">
+                        <option value="custom">Ručno / Izaberi preset…</option>
+                        <option value="turntable">Puna rotacija 360° · 10 s</option>
+                        <option value="slow-turn">Spora rotacija 360° · 20 s</option>
+                        <option value="hero">Hero — blago njihanje · 8 s</option>
+                        <option value="tilt">Nagib napred–nazad · 6 s</option>
+                        <option value="roll">Blaga rotacija u ravni ekrana · 8 s</option>
+                    </select>
+                    <div class="hint">Izaberi preset za automatski pregled, pa klikni Export video. Svaki preset postavlja animaciju, trajanje, 1080 px i 30 FPS. Zadržava tvoju sliku, ugao telefona i kadar.</div>
+                    <label for="motion-type">Animation</label>
+                    <select id="motion-type"><option value="spin">Full rotation</option><option value="sway">Gentle sway</option></select>
+                    <label for="motion-axis">Axis</label>
+                    <select id="motion-axis"><option value="y">Y — turn</option><option value="x">X — tilt</option><option value="z">Z — roll</option></select>
+                    <div class="slider-row"><label for="motion-speed">Speed <b id="v-motion-speed">1×</b></label><input id="motion-speed" type="range" min="0.1" max="3" step="0.0001" value="1"></div>
+                    <div class="slider-row"><label for="motion-amplitude">Sway angle <b id="v-motion-amplitude">25°</b></label><input id="motion-amplitude" type="range" min="5" max="90" value="25"></div>
+                    <label for="video-duration">Duration (seconds)</label>
+                    <input id="video-duration" type="number" min="1" max="60" value="6">
+                    <label for="video-size">Video resolution (long edge)</label>
+                    <select id="video-size"><option value="720">720 px</option><option value="1080" selected>1080 px</option><option value="1920">1920 px</option></select>
+                    <label for="video-fps">Frame rate</label>
+                    <select id="video-fps"><option value="24">24 FPS</option><option value="30" selected>30 FPS</option><option value="60">60 FPS</option></select>
+                    <button class="primary" id="btn-video">Export video</button>
+                    <button id="btn-video-cancel" hidden>Cancel recording</button>
+                    <progress id="video-progress" max="1" value="0" hidden style="width:100%" aria-label="Video recording progress"></progress>
+                    <div class="hint">Records one animation from the current angle and framing, with the scene background (no audio). WebM, or MP4 depending on browser support. Keep this tab visible while recording.</div>
+                </div>
+            </details>
             <div class="divider"></div>
 
             <details open>
@@ -713,6 +763,9 @@
 
         <script type="module">
             import * as THREE from "three";
+            import { initPromoStudio } from "./promo.js";
+            import { normalizeScreenSettings, scrollPlacement, caseMaterial } from "./promo-core.mjs";
+            import { createPromoDevices } from "./promo-devices.js";
             import { OrbitControls } from "three/addons/controls/OrbitControls.js";
             import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
             import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
@@ -1898,7 +1951,7 @@
                 // The logo shares the exact depth of the back shell + another panel → 3-way z-fighting.
                 // polygonOffset alone weakens when zoomed out, so ALSO physically lift the mesh off the shell
                 // along its own surface normal (a real geometric gap that never z-fights at any distance).
-                const rigBox = new THREE.Box3().setFromObject(rig);
+                const rigBox = new THREE.Box3().setFromObject(modelGroup || rig);
                 const rigCenter = rigBox.getCenter(new THREE.Vector3());
                 for (const mesh of logoMeshes) {
                     mesh.renderOrder = 3;
@@ -2292,6 +2345,11 @@
             buildPresetButtons();
 
             // --- UI wiring ---
+            const motionBase = new THREE.Quaternion();
+            let motionTime = 0;
+            let previousTick = performance.now();
+            let videoSession = null;
+            let promoController = null;
             let autoSpin = false;
             let spinY = 0; // fractional Y-slider position (%) while auto-spinning, for smooth 0->100 looping
             const btnSpinEl = document.getElementById("btn-spin");
@@ -2301,6 +2359,11 @@
                     lastPreset = null; // spinning away from a preset clears its highlight
                     highlightActivePreset();
                 }
+                if (v && !autoSpin) {
+                    motionBase.copy(qArcTarget);
+                    motionTime = 0;
+                }
+                if (!v && autoSpin) syncSlidersFromArc();
                 autoSpin = v;
                 btnSpinEl.classList.toggle("active", v);
             }
@@ -2316,9 +2379,9 @@
             let lastShotImg = null; // raw imported image, kept so model switches can recompose per-model framing
             // Live color filters applied to the imported screenshot.
             const screenFilters = { bri: 100, con: 100, sat: 100 };
+            const imageAdjust = { zoom: 100, x: 0, y: 0, angle: 0, fit: "cover" };
             const FILTER_DEFAULTS = { bri: 100, con: 100, sat: 100 };
-            function filterString() {
-                const f = screenFilters;
+            function filterString(f = screenFilters) {
                 return (
                     "brightness(" +
                     f.bri / 100 +
@@ -2346,13 +2409,16 @@
             }
             // Draw the imported screenshot onto a canvas. Models whose glb lacks a bezel (screenInset) get a
             // black border with rounded inner corners composited around the screenshot.
-            function composeScreenCanvas(img) {
+            function composeScreenCanvas(img, destination = null, settings = null) {
+                const adjustment = settings?.image || imageAdjust;
                 const W = 1179,
                     H = 2556; // iPhone screen resolution (portrait)
-                const c = document.createElement("canvas");
-                c.width = W;
-                c.height = H;
+                const c = destination || document.createElement("canvas");
+                if (c.width !== W) c.width = W;
+                if (c.height !== H) c.height = H;
                 const g = c.getContext("2d");
+                g.clearRect(0, 0, W, H);
+                const sourceWidth = img.videoWidth || img.width, sourceHeight = img.videoHeight || img.height;
                 const inset = currentModel.screenInset;
                 const b = inset ? inset.border : 0;
                 if (b) {
@@ -2363,14 +2429,28 @@
                     g.roundRect(b, b, W - 2 * b, H - 2 * b, inset.radius || 0);
                     g.clip();
                 }
+                g.fillStyle = "#000";
+                g.fillRect(b, b, W - 2 * b, H - 2 * b);
+                g.save();
+                g.beginPath();
+                g.rect(b, b, W - 2 * b, H - 2 * b);
+                g.clip();
                 // Cover-fit the screenshot into the (possibly inset) display area
                 const iw = W - 2 * b,
                     ih = H - 2 * b;
-                const s = Math.max(iw / img.width, ih / img.height);
-                const dw = img.width * s,
-                    dh = img.height * s;
-                g.filter = filterString(); // live brightness/contrast/saturation/warmth
-                g.drawImage(img, b + (iw - dw) / 2, b + (ih - dh) / 2, dw, dh);
+                const radians = THREE.MathUtils.degToRad(adjustment.angle);
+                const rw = Math.abs(sourceWidth * Math.cos(radians)) + Math.abs(sourceHeight * Math.sin(radians));
+                const rh = Math.abs(sourceWidth * Math.sin(radians)) + Math.abs(sourceHeight * Math.cos(radians));
+                const fit = adjustment.fit === "contain" ? Math.min : Math.max;
+                const scroll = Number.isFinite(adjustment.scroll) ? scrollPlacement(sourceWidth, sourceHeight, iw, ih, adjustment) : null;
+                const s = scroll ? scroll.scale : fit(iw / rw, ih / rh) * adjustment.zoom / 100;
+                const dw = sourceWidth * s,
+                    dh = sourceHeight * s;
+                g.filter = filterString(settings?.filters); // live brightness/contrast/saturation/warmth
+                g.translate(b + (scroll ? scroll.x : iw / 2 + iw * adjustment.x / 100), b + (scroll ? scroll.y : ih / 2 + ih * adjustment.y / 100));
+                g.rotate(radians);
+                g.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+                g.restore();
                 g.filter = "none";
                 if (b) g.restore();
                 return c;
@@ -2384,6 +2464,34 @@
                     ),
                 );
             }
+            function refreshScreenFromControls() {
+                if (promoController?.active) {
+                    promoController.onScreenSettingsChanged({ image: imageAdjust, filters: screenFilters });
+                } else refreshScreenFromShot();
+            }
+            function resetImageAdjustments() {
+                Object.assign(imageAdjust, { zoom: 100, x: 0, y: 0, angle: 0, fit: "cover" });
+                for (const key of ["zoom", "x", "y", "angle"]) {
+                    document.getElementById("image-" + key).value = imageAdjust[key];
+                    document.getElementById("v-image-" + key).textContent = imageAdjust[key] + (key === "angle" ? "°" : "%");
+                }
+                document.getElementById("image-fit").value = "cover";
+            }
+            for (const key of ["zoom", "x", "y", "angle"]) {
+                document.getElementById("image-" + key).oninput = (e) => {
+                    imageAdjust[key] = +e.target.value;
+                    document.getElementById("v-image-" + key).textContent = e.target.value + (key === "angle" ? "°" : "%");
+                    refreshScreenFromControls();
+                };
+            }
+            document.getElementById("image-fit").onchange = (e) => {
+                imageAdjust.fit = e.target.value;
+                refreshScreenFromControls();
+            };
+            document.getElementById("image-reset").onclick = () => {
+                resetImageAdjustments();
+                refreshScreenFromControls();
+            };
             document.getElementById("btn-import").onclick = () =>
                 fileShot.click();
             fileShot.onchange = (e) => {
@@ -2402,7 +2510,9 @@
                     ) {
                         setDeviceOrientation("portrait");
                     }
+                    resetImageAdjustments();
                     lastShotImg = toPortraitSource(img);
+                    promoController?.onImageImported(lastShotImg);
                     const canvas = composeScreenCanvas(lastShotImg);
                     const tex = new THREE.CanvasTexture(canvas);
                     setScreenTexture(tex);
@@ -2415,6 +2525,7 @@
                     statusEl.textContent = t("statusImageFailed");
                     URL.revokeObjectURL(url);
                 };
+                fileShot.value = "";
                 img.src = url;
             };
 
@@ -2437,7 +2548,7 @@
                     screenFilters[c.key] = +el.value;
                     document.getElementById(c.label).textContent =
                         el.value + c.unit;
-                    refreshScreenFromShot();
+                    refreshScreenFromControls();
                 };
             });
             document.getElementById("btn-filters-reset").onclick = () => {
@@ -2446,7 +2557,7 @@
                     document.getElementById(c.id).value = FILTER_DEFAULTS[c.key];
                 });
                 syncFilterLabels();
-                refreshScreenFromShot();
+                refreshScreenFromControls();
             };
 
             // Export the current view as a transparent PNG, auto-cropped to the phone with padding
@@ -2483,7 +2594,7 @@
 
                 // Re-aim the camera at the model's true center along the current view direction, so the phone is
                 // centered in the export frame (the live controls.target may not sit on the model center).
-                const box = new THREE.Box3().setFromObject(rig);
+                const box = new THREE.Box3().setFromObject(modelGroup || rig);
                 const modelCenter = box.getCenter(new THREE.Vector3());
                 const prevCamPos = camera.position.clone();
                 const viewDir = new THREE.Vector3();
@@ -2752,6 +2863,10 @@
 
             // Resize
             function onResize() {
+                if (promoController?.active) {
+                    if (!promoController.recording) promoController.resize();
+                    return;
+                }
                 // Read the canvas container's real size after layout has settled
                 const w = wrap.clientWidth,
                     h = wrap.clientHeight;
@@ -2791,6 +2906,7 @@
 
                 // Bottom-sheet behavior only applies in portrait; landscape uses a static side panel
                 const isMobile = () =>
+                    !document.body.classList.contains("promo-mode") &&
                     matchMedia("(orientation: portrait)").matches &&
                     matchMedia("(max-width: 760px), (pointer: coarse)").matches;
                 let dragging = false,
@@ -3029,29 +3145,236 @@
             window.addEventListener("pointerup", onDragEnd);
             canvasEl.addEventListener("pointercancel", onDragEnd);
 
+            // A speed of 1 is one cycle per 9.26 seconds; preset speeds give one full cycle.
+            const VIDEO_PRESETS = {
+                "turntable": { type: "spin", axis: "y", speed: 0.926, amplitude: 25, duration: 10 },
+                "slow-turn": { type: "spin", axis: "y", speed: 0.463, amplitude: 25, duration: 20 },
+                "hero": { type: "sway", axis: "y", speed: 1.1575, amplitude: 20, duration: 8 },
+                "tilt": { type: "sway", axis: "x", speed: 1.5433, amplitude: 15, duration: 6 },
+                "roll": { type: "sway", axis: "z", speed: 1.1575, amplitude: 12, duration: 8 },
+            };
+            function applyVideoPreset(id) {
+                const preset = VIDEO_PRESETS[id];
+                if (!preset) return;
+                setAutoSpin(false);
+                cancelAnimationFrame(anim);
+                anim = null;
+                // Preview and recording both start from the currently visible orientation.
+                qArcTarget.copy(qArc);
+                for (const key of ["type", "axis", "speed", "amplitude"]) {
+                    document.getElementById("motion-" + key).value = preset[key];
+                }
+                document.getElementById("v-motion-speed").textContent = Number(preset.speed.toFixed(2)) + "×";
+                document.getElementById("v-motion-amplitude").textContent = preset.amplitude + "°";
+                document.getElementById("video-duration").value = preset.duration;
+                document.getElementById("video-size").value = "1080";
+                document.getElementById("video-fps").value = "30";
+                document.getElementById("video-preset").value = id;
+                setAutoSpin(true);
+                statusEl.textContent = "Preset je spreman — klikni Export video za snimanje.";
+            }
+            document.getElementById("video-preset").onchange = (e) => applyVideoPreset(e.target.value);
+            const markVideoCustom = () => { document.getElementById("video-preset").value = "custom"; };
+            for (const id of ["video-duration", "video-size", "video-fps"]) {
+                document.getElementById(id).addEventListener("input", markVideoCustom);
+            }
+            for (const key of ["speed", "amplitude"]) {
+                document.getElementById("motion-" + key).oninput = (e) => {
+                    markVideoCustom();
+                    document.getElementById("v-motion-" + key).textContent = e.target.value + (key === "speed" ? "×" : "°");
+                    if (!autoSpin) return;
+                    motionBase.copy(qArc);
+                    motionTime = 0;
+                };
+            }
+            for (const key of ["type", "axis"]) {
+                document.getElementById("motion-" + key).onchange = () => {
+                    markVideoCustom();
+                    motionBase.copy(qArc);
+                    motionTime = 0;
+                };
+            }
+            const videoButton = document.getElementById("btn-video");
+            const cancelVideoButton = document.getElementById("btn-video-cancel");
+            const videoProgress = document.getElementById("video-progress");
+            const videoTypes = ["video/webm;codecs=vp8", "video/webm;codecs=vp9", "video/webm", "video/mp4;codecs=avc1.42E01E", "video/mp4"];
+            const videoMime = typeof MediaRecorder !== "undefined"
+                ? videoTypes.find((type) => MediaRecorder.isTypeSupported(type)) : null;
+            if (!videoMime || !HTMLCanvasElement.prototype.captureStream) {
+                videoButton.disabled = true;
+                videoButton.textContent = "Video unavailable in this browser";
+            }
+            videoButton.onclick = () => {
+                if (videoSession) return;
+                if (!modelGroup) {
+                    statusEl.textContent = "Wait for the phone model to load.";
+                    return;
+                }
+                const durationInput = document.getElementById("video-duration");
+                if (!durationInput.reportValidity()) return;
+                const duration = Number(durationInput.value);
+                if (!Number.isFinite(duration) || duration < 1 || duration > 60) {
+                    statusEl.textContent = "Choose a duration between 1 and 60 seconds.";
+                    return;
+                }
+                const fps = +document.getElementById("video-fps").value;
+                const longEdge = +document.getElementById("video-size").value;
+                const output = document.createElement("canvas");
+                const source = renderer.domElement;
+                const scale = longEdge / Math.max(source.width, source.height);
+                output.width = Math.max(2, Math.round(source.width * scale / 2) * 2);
+                output.height = Math.max(2, Math.round(source.height * scale / 2) * 2);
+                const ctx = output.getContext("2d", { alpha: false });
+                const saved = {
+                    spin: autoSpin, target: qArcTarget.clone(), live: qArc.clone(),
+                    base: motionBase.clone(), time: motionTime,
+                    controls: controls.enabled, pointer: source.style.pointerEvents,
+                };
+                let stream, recorder, timeout;
+                let cancelled = false, failed = false, cleaned = false;
+                const chunks = [];
+                const disabled = [...document.querySelectorAll("button, input, select")]
+                    .filter((el) => el !== cancelVideoButton).map((el) => [el, el.disabled]);
+                const cleanup = () => {
+                    if (cleaned) return;
+                    cleaned = true;
+                    clearTimeout(timeout);
+                    stream?.getTracks().forEach((track) => track.stop());
+                    document.removeEventListener("visibilitychange", onVisibility);
+                    videoSession = null;
+                    setAutoSpin(saved.spin);
+                    qArcTarget.copy(saved.target);
+                    qArc.copy(saved.live);
+                    arcball.quaternion.copy(saved.live);
+                    motionBase.copy(saved.base);
+                    motionTime = saved.time;
+                    syncSlidersFromArc();
+                    controls.enabled = saved.controls;
+                    source.style.pointerEvents = saved.pointer;
+                    disabled.forEach(([el, value]) => { el.disabled = value; });
+                    cancelVideoButton.hidden = true;
+                    videoProgress.hidden = true;
+                };
+                const stop = (cancel = false) => {
+                    cancelled ||= cancel;
+                    if (recorder && recorder.state !== "inactive") recorder.stop();
+                    else cleanup();
+                };
+                const onVisibility = () => {
+                    if (document.hidden) {
+                        stop(true);
+                        statusEl.textContent = "Recording cancelled: keep the tab visible while exporting.";
+                    }
+                };
+                try {
+                    // Capture from a dedicated fixed-size canvas: window resizing cannot change video dimensions.
+                    renderer.render(scene, camera);
+                    ctx.drawImage(source, 0, 0, output.width, output.height);
+                    stream = output.captureStream(fps);
+                    recorder = new MediaRecorder(stream, { mimeType: videoMime, videoBitsPerSecond: 12000000 });
+                    recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+                    recorder.onerror = () => {
+                        failed = true;
+                        statusEl.textContent = "Video recording failed. Try a lower resolution or another browser.";
+                        stop(true);
+                    };
+                    recorder.onstop = () => {
+                        cleanup();
+                        if (cancelled || failed) return;
+                        const mime = recorder.mimeType || videoMime;
+                        const blob = new Blob(chunks, { type: mime });
+                        if (!blob.size) {
+                            statusEl.textContent = "No video was recorded. Please try another browser.";
+                            return;
+                        }
+                        const extension = mime.includes("mp4") ? "mp4" : "webm";
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = "phone-mockup." + extension;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        setTimeout(() => URL.revokeObjectURL(url), 60000);
+                        statusEl.textContent = `Video exported: ${output.width} × ${output.height}, ${duration}s, ${extension.toUpperCase()}.`;
+                    };
+                    disabled.forEach(([el]) => { el.disabled = true; });
+                    controls.enabled = false;
+                    source.style.pointerEvents = "none";
+                    cancelAnimationFrame(anim);
+                    anim = null;
+                    cancelAnimationFrame(orientAnim);
+                    setAutoSpin(false);
+                    qArcTarget.copy(qArc);
+                    setAutoSpin(true);
+                    cancelVideoButton.hidden = false;
+                    videoProgress.hidden = false;
+                    videoProgress.value = 0;
+                    document.addEventListener("visibilitychange", onVisibility);
+                    let start = null;
+                    videoSession = {
+                        frame(now) {
+                            if (start === null) return;
+                            ctx.fillStyle = "#fff";
+                            ctx.fillRect(0, 0, output.width, output.height);
+                            const fit = Math.min(output.width / source.width, output.height / source.height);
+                            const w = source.width * fit, h = source.height * fit;
+                            ctx.drawImage(source, (output.width - w) / 2, (output.height - h) / 2, w, h);
+                            stream.getVideoTracks()[0]?.requestFrame?.();
+                            videoProgress.value = Math.min(1, (now - start) / (duration * 1000));
+                        },
+                        cancel() { stop(true); },
+                    };
+                    cancelVideoButton.onclick = () => {
+                        videoSession?.cancel();
+                        statusEl.textContent = "Recording cancelled.";
+                    };
+                    recorder.onstart = () => {
+                        if (cancelled || failed || cleaned) return;
+                        // Starting an encoder and copying WebGL frames can be slow. Count the
+                        // duration only once it is actually recording, not while it initializes.
+                        start = performance.now();
+                        motionTime = 0;
+                        previousTick = start;
+                        ctx.drawImage(source, 0, 0, output.width, output.height);
+                        stream.getVideoTracks()[0]?.requestFrame?.();
+                        statusEl.textContent = `Recording ${duration}s video…`;
+                        timeout = setTimeout(() => stop(), duration * 1000);
+                    };
+                    recorder.start(250);
+                    statusEl.textContent = "Preparing video encoder…";
+                } catch (error) {
+                    failed = true;
+                    stop(true);
+                    statusEl.textContent = "Cannot record video in this browser. Try Chrome, Edge or Safari, or lower the resolution.";
+                    console.error("Video export failed", error);
+                }
+            };
+
             // Render loop
             function tick() {
                 requestAnimationFrame(tick);
+                const now = performance.now();
+                const dt = Math.min((now - previousTick) / 1000, 0.1);
+                previousTick = now;
                 if (autoSpin) {
-                    // Auto-spin advances the Y slider itself (looping 0->100), and the orientation is rebuilt
-                    // from the sliders — so the Y slider visibly ramps 0%->100% instead of the Euler readback
-                    // jumping around. X and Z hold whatever they were set to. The orientation uses the
-                    // fractional spinY (not the rounded slider) so the motion stays smooth between whole %.
-                    spinY = (spinY + 0.18) % 100;
-                    setRotSlider("y", spinY);
-                    _rotEuler.set(
-                        (rotEls.x.value / 100) * Math.PI * 2,
-                        (spinY / 100) * Math.PI * 2,
-                        (rotEls.z.value / 100) * Math.PI * 2,
-                        "XYZ"
-                    );
-                    qArcTarget.setFromEuler(_rotEuler);
+                    motionTime += dt;
+                    const phase = motionTime * Math.PI * 2 / 9.26 * +document.getElementById("motion-speed").value;
+                    const angle = document.getElementById("motion-type").value === "sway"
+                        ? Math.sin(phase) * THREE.MathUtils.degToRad(+document.getElementById("motion-amplitude").value)
+                        : phase;
+                    const axis = new THREE.Vector3();
+                    axis[document.getElementById("motion-axis").value] = 1;
+                    qArcTarget.copy(motionBase).multiply(new THREE.Quaternion().setFromAxisAngle(axis, angle));
                 }
                 // Ease the live orientation toward the target for consistent damping on both drag and presets.
                 qArc.slerp(qArcTarget, dragState.active || autoSpin ? 1 : 0.18);
                 arcball.quaternion.copy(qArc);
                 controls.update();
+                promoController?.beforeFrame(now);
                 renderer.render(scene, camera);
+                promoController?.afterFrame();
+                if (videoSession) videoSession.frame(now);
             }
             tick();
 
@@ -3086,6 +3409,174 @@
             };
             applyTranslations(); // translate static markup before the first model finishes loading
 
+            // Bridge: the promo compositor reuses the real 3D model, image filters and lighting.
+            const promoDevices = createPromoDevices(THREE, rig);
+            const promoOriginalMaterials = new Map();
+            let promoPhoneTexture = null, promoPhoneCanvas = null, promoLastSource = null, promoLastKey = '';
+            let promoSaved = null;
+            let promoAspect = 9 / 16;
+            function resizePromoRenderer() {
+                const w = Math.max(2, Math.round(Math.min(wrap.clientWidth, wrap.clientHeight * promoAspect)));
+                const h = Math.max(2, Math.round(w / promoAspect));
+                const pixelRatio = Math.min(window.devicePixelRatio, 2);
+                const size = renderer.getSize(new THREE.Vector2());
+                if (size.x !== w || size.y !== h || renderer.getPixelRatio() !== pixelRatio) {
+                    renderer.setPixelRatio(pixelRatio);
+                    renderer.setSize(w, h, false);
+                }
+                camera.aspect = promoAspect;
+                camera.updateProjectionMatrix();
+            }
+            function syncPromoScreenControls(value) {
+                const settings = normalizeScreenSettings(value);
+                Object.assign(imageAdjust, settings.image); Object.assign(screenFilters, settings.filters);
+                for (const key of ["zoom", "x", "y", "angle"]) {
+                    document.getElementById("image-" + key).value = imageAdjust[key];
+                    document.getElementById("v-image-" + key).textContent = imageAdjust[key] + (key === "angle" ? "°" : "%");
+                }
+                document.getElementById("image-fit").value = imageAdjust.fit;
+                filterCtl.forEach(c => { document.getElementById(c.id).value = screenFilters[c.key]; });
+                syncFilterLabels();
+            }
+            promoController = initPromoStudio({
+                canvas: renderer.domElement,
+                syncScreenControls: syncPromoScreenControls,
+                ready: () => !!modelGroup && loaderEl.style.display === "none",
+                isRecording: () => !!videoSession,
+                enter() {
+                    promoSaved = {
+                        screen: normalizeScreenSettings({ image: imageAdjust, filters: screenFilters }),
+                        model: currentModel,
+                        lights: surroundLights.map(light => ({ color: light.color.clone(), intensity: light.intensity })),
+                        environment: scene.environmentIntensity,
+                        background: scene.background, position: camera.position.clone(),
+                        quaternion: camera.quaternion.clone(), zoom: camera.zoom,
+                        target: controls.target.clone(), enabled: controls.enabled,
+                        arc: arcball.quaternion.clone(), scale: arcball.scale.clone(),
+                        arcPosition: arcball.position.clone(), orient: orientRig.quaternion.clone(), spin: autoSpin,
+                    };
+                    setAutoSpin(false);
+                    cancelAnimationFrame(anim); cancelAnimationFrame(orientAnim);
+                    anim = null; orientAnim = null;
+                    scene.background = null; controls.enabled = false;
+                    controls.target.set(0, 0, 0);
+                    if (/samsung/i.test(currentModel.label)) loadModelCfg(MODELS[0]);
+                },
+                leave() {
+                    if (!promoSaved) return;
+                    promoDevices.show('iphone', '#62646b');
+                    if (modelGroup) modelGroup.visible = true;
+                    for (const [mat, original] of promoOriginalMaterials) { mat.color.copy(original.color); mat.metalness = original.metalness; mat.roughness = original.roughness; }
+                    promoOriginalMaterials.clear();
+                    surroundLights.forEach((light, i) => { light.color.copy(promoSaved.lights[i].color); light.intensity = promoSaved.lights[i].intensity; });
+                    scene.environmentIntensity = promoSaved.environment;
+                    syncPromoScreenControls(promoSaved.screen);
+                    refreshScreenFromShot(); promoLastSource = null; promoLastKey = '';
+                    if (currentModel !== promoSaved.model) loadModelCfg(promoSaved.model);
+                    scene.background = promoSaved.background;
+                    camera.position.copy(promoSaved.position); camera.quaternion.copy(promoSaved.quaternion);
+                    camera.zoom = promoSaved.zoom;
+                    controls.target.copy(promoSaved.target); controls.enabled = promoSaved.enabled;
+                    arcball.quaternion.copy(promoSaved.arc); qArc.copy(promoSaved.arc); qArcTarget.copy(promoSaved.arc);
+                    arcball.position.copy(promoSaved.arcPosition); arcball.scale.copy(promoSaved.scale);
+                    arcball.visible = true; orientRig.quaternion.copy(promoSaved.orient);
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                    renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+                    camera.aspect = wrap.clientWidth / wrap.clientHeight; camera.updateProjectionMatrix();
+                    setAutoSpin(promoSaved.spin); promoSaved = null;
+                },
+                setAspect(value) { promoAspect = value; resizePromoRenderer(); },
+                resize: resizePromoRenderer,
+                pose(pose) {
+                    arcball.visible = pose.visible;
+                    arcball.position.set(pose.x, pose.y, 0); arcball.scale.setScalar(pose.scale);
+                    arcball.quaternion.setFromEuler(new THREE.Euler(
+                        THREE.MathUtils.degToRad(pose.rx), THREE.MathUtils.degToRad(pose.ry), THREE.MathUtils.degToRad(pose.rz), "XYZ"));
+                    orientRig.quaternion.identity();
+                    camera.position.set(0, 0, 6); camera.zoom = 1; camera.lookAt(0, 0, 0);
+                    camera.aspect = promoAspect; camera.updateProjectionMatrix();
+                },
+                canExport(w, h) { return Math.max(w, h) <= renderer.capabilities.maxTextureSize; },
+                screenFrame(source, device, style, power, sceneSettings) {
+                    promoDevices.show(device, style.frame, style.caseFinish);
+                    if (modelGroup) modelGroup.visible = device === 'iphone';
+                    surroundLights.forEach(light => { light.color.set(style.light); light.intensity = 1.15 * power / 100; });
+                    scene.environmentIntensity = 2.4 * power / 100;
+                    if (device === 'iphone') for (const { mat } of bodyMats) {
+                        if (!promoOriginalMaterials.has(mat)) promoOriginalMaterials.set(mat, { color:mat.color.clone(), metalness:mat.metalness, roughness:mat.roughness });
+                        mat.color.set(style.frame);
+                        const original = promoOriginalMaterials.get(mat);
+                        const finish = caseMaterial(style.caseFinish);
+                        mat.metalness = finish ? finish.metalness : original.metalness;
+                        mat.roughness = finish ? finish.roughness : original.roughness;
+                    }
+                    source ||= lastShotImg;
+                    if (!source || source.seeking || (source.readyState !== undefined && source.readyState < 2)) return;
+                    const settings = sceneSettings || { image: imageAdjust, filters: screenFilters };
+                    const key = device + ':' + currentModel.id + ':' + (source.currentTime ?? '') + JSON.stringify(settings);
+                    if (device !== 'iphone') {
+                        // The key includes source identity: equal-size screenshots must still replace each other.
+                        if (source !== promoLastSource) promoLastKey = '';
+                        promoDevices.update(device, source, settings, key + ':' + (source.src || 'default'));
+                    } else if (source !== promoLastSource || key !== promoLastKey || screenTexture !== promoPhoneTexture) {
+                        promoPhoneCanvas = composeScreenCanvas(source, promoPhoneCanvas, settings);
+                        if (!promoPhoneTexture || screenTexture !== promoPhoneTexture) {
+                            promoPhoneTexture = new THREE.CanvasTexture(promoPhoneCanvas); setScreenTexture(promoPhoneTexture);
+                        } else promoPhoneTexture.needsUpdate = true;
+                    }
+                    promoLastSource = source; promoLastKey = key;
+                },
+                beginExport(w, h) {
+                    renderer.setPixelRatio(1); renderer.setSize(w, h, false);
+                },
+                endExport: resizePromoRenderer,
+                getScreenSettings() {
+                    return { image: { ...imageAdjust }, filters: { ...screenFilters }, model: currentModel.id };
+                },
+                loadScreenSettings(value) {
+                    resetImageAdjustments();
+                    Object.assign(screenFilters, FILTER_DEFAULTS);
+                    if (value && typeof value === "object") {
+                        for (const [key, min, max] of [["zoom",25,300],["x",-100,100],["y",-100,100],["angle",-180,180]]) {
+                            const n = value.image?.[key];
+                            if (Number.isFinite(n)) imageAdjust[key] = Math.min(max, Math.max(min, n));
+                        }
+                        imageAdjust.fit = value.image?.fit === "contain" ? "contain" : "cover";
+                        for (const key of ["bri", "con", "sat"]) {
+                            const n = value.filters?.[key];
+                            if (Number.isFinite(n)) screenFilters[key] = Math.min(200, Math.max(0, n));
+                        }
+                        const index = MODELS.findIndex(m => m.id === value.model);
+                        if (index >= 0 && currentModel.id !== value.model) {
+                            modelSelect.value = index; loadModelCfg(MODELS[index]);
+                        }
+                    }
+                    for (const key of ["zoom", "x", "y", "angle"]) {
+                        document.getElementById("image-" + key).value = imageAdjust[key];
+                        document.getElementById("v-image-" + key).textContent = imageAdjust[key] + (key === "angle" ? "°" : "%");
+                    }
+                    document.getElementById("image-fit").value = imageAdjust.fit;
+                    filterCtl.forEach(c => { document.getElementById(c.id).value = screenFilters[c.key]; });
+                    syncFilterLabels(); refreshScreenFromShot();
+                },
+                getImageData() {
+                    if (!lastShotImg) return null;
+                    const c = document.createElement("canvas");
+                    const scale = Math.min(1, 2400 / Math.max(lastShotImg.width, lastShotImg.height));
+                    c.width = Math.round(lastShotImg.width * scale); c.height = Math.round(lastShotImg.height * scale);
+                    c.getContext("2d").drawImage(lastShotImg, 0, 0, c.width, c.height);
+                    return c.toDataURL("image/jpeg", 0.92);
+                },
+                loadImageData(data) {
+                    return new Promise((resolve, reject) => {
+                        const image = new Image(); image.onload = () => {
+                            lastShotImg = toPortraitSource(image);
+                            refreshScreenFromShot(); promoController?.onImageImported(lastShotImg); resolve();
+                        }; image.onerror = () => reject(new Error("Slika projekta nije ispravna.")); image.src = data;
+                    });
+                },
+            });
+
             // Boot: preload the default screenshot into lastShotImg so the first model (and every switch)
             // composites it automatically via the existing recompose path.
             const DEFAULT_SHOT_URL = "default-screenshot.jpg";
@@ -3101,7 +3592,7 @@
             // PWA service worker: enables install + offline. Only over http(s) (skips the file:// standalone).
             if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
                 window.addEventListener("load", () => {
-                    navigator.serviceWorker.register("sw.js").catch(() => {});
+                    navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch(() => {});
                 });
             }
         </script>
