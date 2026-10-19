@@ -1,6 +1,6 @@
 // Versioned offline cache. Navigations use the network first so UI fixes are not
 // trapped behind a cached index.html; large models and library assets stay cached.
-const CACHE = "phone-mockup-studio-v102";
+const CACHE = "phone-mockup-studio-v104";
 const PRECACHE = [
     "./",
     "./index.html",
@@ -9,7 +9,7 @@ const PRECACHE = [
     "./promo-devices.js",
     "./promo.css",
     "./promo-core.js",
-    "./vendor/three/build/three.module.js",
+    "./vendor/three/three.module.js",
     "./vendor/three/examples/jsm/controls/OrbitControls.js",
     "./vendor/three/examples/jsm/loaders/GLTFLoader.js",
     "./vendor/three/examples/jsm/environments/RoomEnvironment.js",

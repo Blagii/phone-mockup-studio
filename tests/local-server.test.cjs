@@ -14,7 +14,7 @@ server=module.ThreadingHTTPServer(('127.0.0.1',0),partial(module.StudioHandler,d
 thread=threading.Thread(target=server.serve_forever,daemon=True)
 thread.start()
 try:
- for filename, expected in [('promo-core.js','text/javascript'),('promo.js','text/javascript'),('promo.css','text/css'),('index.html','text/html'),('vendor/three/build/three.module.js','text/javascript'),('vendor/three/examples/jsm/utils/BufferGeometryUtils.js','text/javascript')]:
+ for filename, expected in [('promo-core.js','text/javascript'),('promo.js','text/javascript'),('promo.css','text/css'),('index.html','text/html'),('vendor/three/three.module.js','text/javascript'),('vendor/three/examples/jsm/utils/BufferGeometryUtils.js','text/javascript')]:
   with urllib.request.urlopen('http://127.0.0.1:'+str(server.server_port)+'/'+filename) as response:
    assert response.headers.get_content_type()==expected,(filename,response.headers)
    assert len(response.read())>0

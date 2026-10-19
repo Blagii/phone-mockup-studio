@@ -10,7 +10,7 @@ import webbrowser
 ROOT = Path(__file__).resolve().parent
 REQUIRED = (
     'index.html', 'promo.js', 'promo-core.js', 'promo-devices.js', 'promo-media.js',
-    'promo.css', 'vendor/three/build/three.module.js',
+    'promo.css', 'vendor/three/three.module.js',
     'vendor/three/examples/jsm/controls/OrbitControls.js',
     'vendor/three/examples/jsm/loaders/GLTFLoader.js',
     'vendor/three/examples/jsm/environments/RoomEnvironment.js',

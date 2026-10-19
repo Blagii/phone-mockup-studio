@@ -1,4 +1,4 @@
-import { SHOTS, THEMES, makeScene, makeTemplate, totalDuration, sceneAt, sceneOpacity, validateProject, clamp, ease, DEVICES, styleFor, outputSize, makeOverlay, normalizeScreenSettings, screenSettingsAt, MAX_SCENE_DURATION, poseForScene, normalizeCameraZoom, PHONE_CASES } from './promo-core.js';
+import { SHOTS, THEMES, makeScene, makeTemplate, totalDuration, sceneAt, sceneOpacity, validateProject, clamp, ease, DEVICES, styleFor, outputSize, makeOverlay, normalizeScreenSettings, screenSettingsAt, MAX_SCENE_DURATION, poseForScene, normalizeCameraZoom, PHONE_CASES, videoMimeFor } from './promo-core.js';
 
 import { createMediaLibrary } from './promo-media.js';
 
@@ -61,6 +61,7 @@ export function initPromoStudio(api) {
         <div class="promo-row"><button id="promo-move-left" title="Pomeri scenu ulevo">← Levo</button><button id="promo-move-right" title="Pomeri scenu udesno">Desno →</button></div>
         <hr class="promo-section-line"><div class="promo-eyebrow">Video izlaz</div>
         <div class="promo-row"><label>Format<select id="promo-ratio"><option value="vertical">9:16 · Reels / Story</option><option value="square">1:1 · Feed</option><option value="wide">16:9 · Landscape</option></select></label><label>Kvalitet<select id="promo-quality"><option value="720">720p · Brže</option><option value="1080">1080p · Full HD</option><option value="2160">4K · 2160p</option></select></label></div>
+        <label>Tip video fajla<select id="promo-video-format"><option value="mp4">MP4</option><option value="webm" selected>WebM</option></select></label><p class="inspector-hint" id="promo-video-format-info"></p>
         <p class="inspector-hint" id="promo-export-size"></p><p class="inspector-hint">Cilj: 30 FPS · bez zvuka. 4K zahteva jači računar. Izvoz traje koliko i promo. Drži ovu karticu otvorenom tokom snimanja.</p>`;
     panel.prepend(inspector);
     const timeline = document.createElement('section');
@@ -306,6 +307,19 @@ export function initPromoStudio(api) {
         if (active) api.setAspect(w / h);
     }
     $('promo-ratio').onchange = resizeOutput; $('promo-quality').onchange = resizeOutput;
+    function supportedVideoMime(format) {
+        if (typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') return null;
+        return videoMimeFor(format, type => MediaRecorder.isTypeSupported(type));
+    }
+    function updateVideoFormat() {
+        const format = $('promo-video-format').value;
+        const mime = supportedVideoMime(format);
+        $('promo-video-format-info').textContent = mime
+            ? `Izvoz: ${mime.startsWith('video/mp4') ? 'MP4' : 'WebM'} · podržan u ovom pregledaču. Bez zvuka.`
+            : `${format.toUpperCase()} nije podržan u ovom pregledaču. Izaberi drugi tip fajla ili probaj drugi pregledač.`;
+    }
+    $('promo-video-format').onchange = updateVideoFormat;
+    updateVideoFormat();
     // Keep completed files reachable even if async/embedded automatic downloads
     // are blocked. Replacing a slot releases only that slot's old Blob URL.
     const downloads = new Map();
@@ -338,7 +352,7 @@ export function initPromoStudio(api) {
         if (recording || mediaBusy) return notice('Sačekaj da se mediji učitaju.');
         const button = $('promo-save'); button.disabled = true; notice('Priprema projekta i medija za čuvanje…');
         try {
-            const project = { version: 2, scenes: structuredClone(scenes), image: api.getImageData(), format: $('promo-ratio').value, quality: $('promo-quality').value, screen: api.getScreenSettings() };
+            const project = { version: 2, scenes: structuredClone(scenes), image: api.getImageData(), format: $('promo-ratio').value, quality: $('promo-quality').value, videoFormat: $('promo-video-format').value, screen: api.getScreenSettings() };
             project.assets = await media.serialize();
             download(new Blob([JSON.stringify(project)], { type: 'application/json' }), 'promo-studio.json');
             notice('Projekat je spreman. Ako preuzimanje nije počelo, klikni „Preuzmi projekat“.');
@@ -357,7 +371,7 @@ export function initPromoStudio(api) {
             api.loadScreenSettings(project.screen);
             if (project.image) await api.loadImageData(project.image);
             media.clear(); media = incoming;
-            $('promo-ratio').value = project.format; $('promo-quality').value = project.quality; resizeOutput();
+            $('promo-ratio').value = project.format; $('promo-quality').value = project.quality; $('promo-video-format').value = project.videoFormat; updateVideoFormat(); resizeOutput();
             setScreenEditing(true); scenes = project.scenes; selected = scenes[0].id; layerId = null; currentTime = previewOffset(chosen()); setPlaying(false); renderMedia(); changed(); notice('Projekat je otvoren sa svim medijima i slojevima.');
         } catch (error) { incoming.clear(); notice(error.message || 'Ne mogu da otvorim projekat.'); }
         finally { mediaBusy = false; }
@@ -628,9 +642,12 @@ export function initPromoStudio(api) {
             return notice('Proveri zum uređaja: početak i kraj moraju biti celi brojevi od 25 do 250%.');
         }
         if (!api.ready()) return notice('Sačekaj da se 3D model učita.');
-        const types = ['video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm', 'video/mp4'];
-        const mime = typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function' && types.find(type => MediaRecorder.isTypeSupported(type));
-        if (!mime || !canvas.captureStream) return notice('Ovaj pregledač ne podržava video izvoz. Probaj Chrome ili Edge.');
+        const format = $('promo-video-format').value;
+        const mime = supportedVideoMime(format);
+        if (!mime || !canvas.captureStream) {
+            updateVideoFormat();
+            return notice(`${format.toUpperCase()} nije podržan u ovom pregledaču. Izaberi drugi tip video fajla ili probaj drugi pregledač.`);
+        }
         const savedTime = currentTime;
         const [exportWidth, exportHeight] = outputSize($('promo-ratio').value, $('promo-quality').value);
         if (!api.canExport(exportWidth, exportHeight)) return notice('GPU ne podržava ovu rezoluciju. Izaberi 1080p ili 720p.');

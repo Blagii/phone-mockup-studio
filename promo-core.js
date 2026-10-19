@@ -105,6 +105,12 @@ export function caseMaterial(finish) {
 }
 export function styleFor(scene) { return { ...THEMES[scene.theme], light: '#ffffff', frame: '#62646b', ...scene.colors, caseFinish: normalizePhoneCase(scene.phoneCase).finish }; }
 
+export function videoMimeFor(format, supports) {
+    const webm = ['video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm'];
+    const mp4 = ['video/mp4;codecs=avc1', 'video/mp4'];
+    const candidates = format === 'mp4' ? mp4 : format === 'webm' ? webm : [];
+    return candidates.find(type => supports(type)) || null;
+}
 export function outputSize(format, quality) {
     const size = Number(quality), ratios = { vertical: [9,16], square: [1,1], wide: [16,9] };
     const [w,h] = ratios[format] || ratios.vertical;
@@ -186,5 +192,6 @@ export function validateProject(data) {
     if (data.image && (typeof data.image !== 'string' || data.image.length > 24000000 || !/^data:image\/(png|jpeg|webp);base64,/.test(data.image))) throw new Error('Neispravna slika u projektu.');
     const format = ['vertical','square','wide'].includes(data.format) ? data.format : 'vertical';
     const quality = ['720','1080','2160'].includes(String(data.quality)) ? String(data.quality) : '720';
-    return { scenes, assets: cleanAssets, image: data.image || null, format, quality, screen: data.screen || null };
+    const videoFormat = ['mp4','webm'].includes(data.videoFormat) ? data.videoFormat : 'webm';
+    return { scenes, assets: cleanAssets, image: data.image || null, format, quality, videoFormat, screen: data.screen || null };
 }
